@@ -1,33 +1,35 @@
-export type JobStatus =
-  | 'captured'
-  | 'email_found'
-  | 'email_sent'
-  | 'interview'
-  | 'offer'
-  | 'rejected'
+import { Database } from './database'
 
-export interface Job {
-  id: string
-  user_id: string
-  company_name: string
-  job_title: string
-  job_url: string
-  job_description: string | null
-  status: JobStatus
-  hr_email: string | null
-  hr_name: string | null
-  email_source: 'community' | 'pattern' | 'hunter' | 'manual' | null
-  created_at: string
-  updated_at: string
-}
+// Export database types
+export type { Database }
 
-export interface CommunityEmail {
-  id: string
-  company_domain: string
-  email: string
-  email_type: 'generic' | 'personal'
-  verified_count: number
-  failed_count: number
-  contributed_by: string
-  created_at: string
-}
+// Helper types for tables
+export type Job = Database['public']['Tables']['jobs']['Row']
+export type JobInsert = Database['public']['Tables']['jobs']['Insert']
+export type JobUpdate = Database['public']['Tables']['jobs']['Update']
+
+export type CommunityEmail = Database['public']['Tables']['community_emails']['Row']
+export type CommunityEmailInsert = Database['public']['Tables']['community_emails']['Insert']
+export type CommunityEmailUpdate = Database['public']['Tables']['community_emails']['Update']
+
+export type EmailSent = Database['public']['Tables']['emails_sent']['Row']
+export type EmailSentInsert = Database['public']['Tables']['emails_sent']['Insert']
+
+export type EmailVerification = Database['public']['Tables']['email_verifications']['Row']
+export type EmailVerificationInsert = Database['public']['Tables']['email_verifications']['Insert']
+
+export type FollowupReminder = Database['public']['Tables']['followup_reminders']['Row']
+export type FollowupReminderInsert = Database['public']['Tables']['followup_reminders']['Insert']
+
+export type UserSettings = Database['public']['Tables']['user_settings']['Row']
+export type UserSettingsInsert = Database['public']['Tables']['user_settings']['Insert']
+export type UserSettingsUpdate = Database['public']['Tables']['user_settings']['Update']
+
+export type UserStats = Database['public']['Tables']['user_stats']['Row']
+export type UserStatsInsert = Database['public']['Tables']['user_stats']['Insert']
+export type UserStatsUpdate = Database['public']['Tables']['user_stats']['Update']
+
+// Export enums
+export type JobStatus = Database['public']['Enums']['job_status']
+export type EmailSource = Database['public']['Enums']['email_source']
+export type EmailType = Database['public']['Enums']['email_type']
