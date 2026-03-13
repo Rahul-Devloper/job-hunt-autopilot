@@ -1,0 +1,45 @@
+.jha-capture-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #0a66c2;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+.jha-capture-btn:hover {
+  background: #004182;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.jha-capture-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.jha-capture-btn.jha-success {
+  background: #057642;
+}
+
+.jha-capture-btn.jha-error {
+  background: #cc1016;
+}
+
+.jha-spinner {
+  animation: jha-spin 1s linear infinite;
+}
+
+@keyframes jha-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

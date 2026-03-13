@@ -69,6 +69,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard/jobs', request.url))
   }
 
+  // CORS headers for Chrome extension API calls
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  }
+
   return response
 }
 
@@ -77,5 +84,6 @@ export const config = {
     '/dashboard/:path*',
     '/login',
     '/signup',
+    '/api/:path*',
   ],
 }
