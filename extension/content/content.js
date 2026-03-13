@@ -115,54 +115,24 @@ function extractJobData() {
   try {
     console.log('Job Hunt Autopilot: Starting data extraction...')
 
-    // Company name - try multiple selectors
-    const companySelectors = [
-      '.job-details-jobs-unified-top-card__company-name a',
-      '.job-details-jobs-unified-top-card__company-name',
-      '.jobs-unified-top-card__company-name a',
-      '.jobs-unified-top-card__company-name',
-      '.job-details-jobs-unified-top-card__primary-description-container a',
-      '[data-test-job-details-company-name]',
-    ]
-
-    let companyElement = null
-    for (const selector of companySelectors) {
-      companyElement = document.querySelector(selector)
-      if (companyElement) {
-        console.log('Found company with selector:', selector)
-        break
-      }
-    }
-
+    // Company name - find link that goes to /company/
+    const companyElement = document.querySelector('a[href*="/company/"]')
     const companyName = companyElement?.innerText?.trim() || ''
     console.log('Company name:', companyName)
 
-    // Extract domain
+    // Extract domain from company URL
     let companyDomain = ''
-    if (companyElement && companyElement.tagName === 'A') {
+    if (companyElement) {
       const match = companyElement.href.match(/linkedin\.com\/company\/([^\/]+)/)
       if (match) companyDomain = match[1] + '.com'
     }
     console.log('Company domain:', companyDomain)
 
-    // Job title - try multiple selectors
-    const titleSelectors = [
-      '.job-details-jobs-unified-top-card__job-title h1',
-      '.job-details-jobs-unified-top-card__job-title',
-      '.jobs-unified-top-card__job-title h1',
-      '.jobs-unified-top-card__job-title a',
-      '[data-test-job-details-job-title]',
-    ]
-
-    let titleElement = null
-    for (const selector of titleSelectors) {
-      titleElement = document.querySelector(selector)
-      if (titleElement) {
-        console.log('Found title with selector:', selector)
-        break
-      }
+    // Job title - new LinkedIn layout uses a <p> tag, fallback to h1
+    let titleElement = document.querySelector('p.ba8b842d._201f6edb')
+    if (!titleElement) {
+      titleElement = document.querySelector('h1')
     }
-
     const jobTitle = titleElement?.innerText?.trim() || ''
     console.log('Job title:', jobTitle)
 
@@ -170,73 +140,31 @@ function extractJobData() {
     const jobUrl = window.location.href.split('?')[0]
     console.log('Job URL:', jobUrl)
 
-    // Location - try multiple selectors
-    const locationSelectors = [
-      '.job-details-jobs-unified-top-card__bullet',
-      '.jobs-unified-top-card__bullet',
-      '.job-details-jobs-unified-top-card__primary-description-container span',
-      '[data-test-job-details-location]',
-    ]
-
-    let locationElement = null
-    for (const selector of locationSelectors) {
-      locationElement = document.querySelector(selector)
-      if (locationElement) {
-        console.log('Found location with selector:', selector)
-        break
-      }
-    }
-
+    // Location
+    const locationElement = document.querySelector('span.ad41daa7')
     const location = locationElement?.innerText?.trim() || ''
     console.log('Location:', location)
 
-    // Salary - try multiple selectors
-    const salarySelectors = [
-      '.job-details-jobs-unified-top-card__job-insight span',
-      '.jobs-unified-top-card__job-insight span',
-      '[data-test-job-details-salary]',
-    ]
-
-    let salaryElement = null
-    for (const selector of salarySelectors) {
-      salaryElement = document.querySelector(selector)
-      if (salaryElement && salaryElement.innerText.includes('$')) {
-        console.log('Found salary with selector:', selector)
-        break
-      }
-    }
-
-    const salary = salaryElement?.innerText?.trim() || null
+    // Salary - regex scan for currency pattern in page text
+    let salary = null
+    const salaryMatch = document.body.innerText.match(/Salary\s+(£|\$)[\d,k\-\s]+/i)
+    if (salaryMatch) salary = salaryMatch[0].trim()
     console.log('Salary:', salary)
 
-    // Job description - try multiple selectors
-    const descriptionSelectors = [
-      '.jobs-description-content__text',
-      '.jobs-description__content',
-      '.job-details-jobs-unified-top-card__job-description',
-      '[data-test-job-details-description]',
-      '.jobs-box__html-content',
-    ]
-
-    let descriptionElement = null
-    for (const selector of descriptionSelectors) {
-      descriptionElement = document.querySelector(selector)
-      if (descriptionElement) {
-        console.log('Found description with selector:', selector)
-        break
-      }
-    }
-
+    // Job description
+    const descriptionElement = document.querySelector('span[data-testid="expandable-text-box"]')
     const jobDescription = descriptionElement?.innerText?.trim() || ''
     console.log('Description length:', jobDescription.length, 'characters')
 
     // Validate required fields
     if (!companyName || !jobTitle || !jobUrl) {
       console.error('Missing required fields:', { companyName, jobTitle, jobUrl })
-      console.log('=== DEBUG: Page content ===')
-      console.log('All h1 elements:', Array.from(document.querySelectorAll('h1')).map(el => el.innerText))
-      console.log('All a[href*="company"] elements:', Array.from(document.querySelectorAll('a[href*="company"]')).map(el => el.innerText))
-      throw new Error('Missing required job data. Make sure you are on a LinkedIn job detail page.')
+      console.log('=== DEBUG ===')
+      console.log('Company link found:', companyElement)
+      console.log('Title element found:', titleElement)
+      console.log('First p tag:', document.querySelector('p')?.innerText)
+      console.log('First h1 tag:', document.querySelector('h1')?.innerText)
+      throw new Error('Missing required job data. Company: ' + !!companyName + ', Title: ' + !!jobTitle)
     }
 
     const result = {
@@ -250,11 +178,11 @@ function extractJobData() {
       status: 'captured',
     }
 
-    console.log('Job Hunt Autopilot: Extracted data:', result)
+    console.log('Job Hunt Autopilot: Successfully extracted data:', result)
     return result
 
   } catch (error) {
-    console.error('Job Hunt Autopilot: Error in extractJobData:', error)
+    console.error('Job Hunt Autopilot: Error extracting job data:', error)
     throw error
   }
 }
