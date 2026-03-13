@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Hunt Autopilot</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <div class="popup-header">
+        <h1>Job Hunt Autopilot</h1>
+        <p class="subtitle">Automate your job search</p>
+      </div>
+
+      <div class="popup-content">
+        <div class="status-section">
+          <div class="status-item">
+            <span class="status-label">Status:</span>
+            <span class="status-value" id="connection-status">Checking...</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Jobs Captured:</span>
+            <span class="status-value" id="jobs-count">-</span>
+          </div>
+        </div>
+
+        <div class="actions-section">
+          <button id="open-dashboard" class="btn btn-primary">Open Dashboard</button>
+          <button id="settings-btn" class="btn btn-secondary">Settings</button>
+        </div>
+
+        <div class="info-section">
+          <p class="info-text">
+            📌 Navigate to a LinkedIn job page and click "Capture Job" to save it!
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
