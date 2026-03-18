@@ -128,8 +128,12 @@ function extractJobData() {
     }
     console.log('Company domain:', companyDomain)
 
-    // Job title - LinkedIn puts it in a <p> inside a div[data-display-contents]
-    let titleElement = document.querySelector('div[data-display-contents] p')
+    // Job title - LinkedIn puts it in a <p> that is a direct child of div[data-display-contents]
+    // The company name <p> is nested inside an <a>, so we skip those
+    let titleElement = null
+    for (const p of document.querySelectorAll('div[data-display-contents] > p')) {
+      if (!p.closest('a')) { titleElement = p; break }
+    }
     if (!titleElement) {
       // Fallback: first h1 with meaningful text
       for (const el of document.querySelectorAll('h1')) {
