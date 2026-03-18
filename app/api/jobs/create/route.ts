@@ -23,7 +23,8 @@ export async function POST(request: Request) {
     const supabase = await createClient()
 
     // TODO: replace with real user from extension auth
-    const demoUserId = '00000000-0000-0000-0000-000000000000'
+    // Get this from: Supabase Dashboard → Authentication → Users → copy your user ID
+    const demoUserId = process.env.DEMO_USER_ID || '00000000-0000-0000-0000-000000000000'
 
     const { data, error } = await supabase
       .from('jobs')
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validation failed', details: error.issues },
         { status: 400 }
       )
     }
