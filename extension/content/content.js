@@ -128,10 +128,44 @@ function extractJobData() {
     }
     console.log('Company domain:', companyDomain)
 
-    // Job title - new LinkedIn layout uses a <p> tag, fallback to h1
-    let titleElement = document.querySelector('p.ba8b842d._201f6edb')
+    // Job title - try multiple approaches
+    // Debug: log all headings to find the right one
+    const allH1 = Array.from(document.querySelectorAll('h1')).map(el => el.innerText.trim()).filter(Boolean)
+    const allH2 = Array.from(document.querySelectorAll('h2')).map(el => el.innerText.trim()).filter(Boolean)
+    console.log('All h1 elements:', allH1)
+    console.log('All h2 elements:', allH2)
+
+    let titleElement = null
+    // Try h1 first — but skip ones that look like LinkedIn nav/branding
+    for (const el of document.querySelectorAll('h1')) {
+      const text = el.innerText.trim()
+      if (text && text.length > 2) {
+        titleElement = el
+        console.log('Found title in h1:', text)
+        break
+      }
+    }
+    // Fallback: h2
     if (!titleElement) {
-      titleElement = document.querySelector('h1')
+      for (const el of document.querySelectorAll('h2')) {
+        const text = el.innerText.trim()
+        if (text && text.length > 2) {
+          titleElement = el
+          console.log('Found title in h2:', text)
+          break
+        }
+      }
+    }
+    // Fallback: element near the company link
+    if (!titleElement && companyElement) {
+      const parent = companyElement.closest('[class]')?.parentElement
+      if (parent) {
+        const nearby = parent.querySelector('p, span, div')
+        if (nearby?.innerText?.trim()) {
+          titleElement = nearby
+          console.log('Found title near company element:', nearby.innerText.trim())
+        }
+      }
     }
     const jobTitle = titleElement?.innerText?.trim() || ''
     console.log('Job title:', jobTitle)
