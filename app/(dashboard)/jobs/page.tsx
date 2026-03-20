@@ -72,7 +72,7 @@ export default function JobsPage() {
       </div>
     )
   }
-
+console.log('jobs==>', jobs)
   return (
     <div className="flex h-full flex-col">
       <Header
