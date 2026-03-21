@@ -50,7 +50,13 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwindcss/plugin')(({ addVariant }: { addVariant: (name: string, selector: string) => void }) => {
+      addVariant('data-active', '&[data-active]')
+      addVariant('data-horizontal', '&[data-horizontal]')
+      addVariant('data-vertical', '&[data-vertical]')
+    }),
+  ],
 };
 
 export default config;

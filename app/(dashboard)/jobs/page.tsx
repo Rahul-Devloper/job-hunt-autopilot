@@ -88,13 +88,13 @@ console.log('jobs==>', jobs)
             <TabsList className="h-auto p-0 bg-transparent gap-0">
               <TabsTrigger
                 value="kanban"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent pb-3 pt-2"
+                className="rounded-none border-b-2 border-transparent data-active:border-gray-900 data-active:bg-transparent pb-3 pt-2"
               >
                 Kanban Board
               </TabsTrigger>
               <TabsTrigger
                 value="list"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent pb-3 pt-2"
+                className="rounded-none border-b-2 border-transparent data-active:border-gray-900 data-active:bg-transparent pb-3 pt-2"
               >
                 List View
               </TabsTrigger>
