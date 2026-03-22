@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Header } from '@/components/dashboard/header'
 import { KanbanBoard } from '@/components/dashboard/kanban-board'
 import { ListView } from '@/components/dashboard/list-view'
+import { ManualEmailDialog } from '@/components/dashboard/manual-email-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
 import type { Job } from '@/types'
@@ -12,6 +13,12 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [findingEmail, setFindingEmail] = useState<string | null>(null)
+  const [manualEmailDialog, setManualEmailDialog] = useState<{
+    open: boolean
+    jobId: string
+    companyName: string
+  } | null>(null)
 
   useEffect(() => {
     fetchJobs()
@@ -57,8 +64,50 @@ export default function JobsPage() {
     }
   }
 
-  function handleFindEmail(id: string) {
-    alert('Email finding coming in Session 5!')
+  async function handleFindEmail(id: string) {
+    const job = jobs.find((j) => j.id === id)
+    if (!job) return
+
+    if (!job.company_domain) {
+      alert('Company domain missing. Cannot find email.')
+      return
+    }
+
+    setFindingEmail(id)
+
+    try {
+      const response = await fetch('/api/emails/find', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job_id: id,
+          company_domain: job.company_domain,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`Email found via ${data.source}!\n\nEmail: ${data.email}`)
+        await fetchJobs()
+      } else {
+        const addManually = confirm(
+          `${data.message}\n\nWould you like to add the email manually?`
+        )
+        if (addManually) {
+          setManualEmailDialog({
+            open: true,
+            jobId: id,
+            companyName: job.company_name,
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error finding email:', error)
+      alert('Failed to find email. Please try again.')
+    } finally {
+      setFindingEmail(null)
+    }
   }
 
   function handleSendEmail(id: string) {
@@ -72,7 +121,6 @@ export default function JobsPage() {
       </div>
     )
   }
-console.log('jobs==>', jobs)
   return (
     <div className="flex h-full flex-col">
       <Header
@@ -119,6 +167,7 @@ console.log('jobs==>', jobs)
                 onDelete={handleDelete}
                 onFindEmail={handleFindEmail}
                 onSendEmail={handleSendEmail}
+                findingEmail={findingEmail}
               />
             )}
           </TabsContent>
@@ -129,10 +178,21 @@ console.log('jobs==>', jobs)
               onDelete={handleDelete}
               onFindEmail={handleFindEmail}
               onSendEmail={handleSendEmail}
+              findingEmail={findingEmail}
             />
           </TabsContent>
         </Tabs>
       </div>
+
+      {manualEmailDialog && (
+        <ManualEmailDialog
+          open={manualEmailDialog.open}
+          onClose={() => setManualEmailDialog(null)}
+          jobId={manualEmailDialog.jobId}
+          companyName={manualEmailDialog.companyName}
+          onSuccess={fetchJobs}
+        />
+      )}
     </div>
   )
 }

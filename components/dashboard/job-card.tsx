@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MoreVertical, ExternalLink, Mail, Trash2 } from 'lucide-react'
+import { MoreVertical, ExternalLink, Mail, Trash2, Loader2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,7 @@ interface JobCardProps {
   onDelete?: (id: string) => void
   onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
+  findingEmail?: string | null
 }
 
 const statusColors: Record<string, string> = {
@@ -40,7 +41,7 @@ const statusLabels: Record<string, string> = {
   rejected: 'Rejected',
 }
 
-export function JobCard({ job, onDelete, onFindEmail, onSendEmail }: JobCardProps) {
+export function JobCard({ job, onDelete, onFindEmail, onSendEmail, findingEmail }: JobCardProps) {
   return (
     <Card className="p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
@@ -86,8 +87,16 @@ export function JobCard({ job, onDelete, onFindEmail, onSendEmail }: JobCardProp
                 variant="outline"
                 className="text-xs h-7"
                 onClick={() => onFindEmail?.(job.id)}
+                disabled={findingEmail === job.id}
               >
-                Find Email
+                {findingEmail === job.id ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Finding...
+                  </>
+                ) : (
+                  'Find Email'
+                )}
               </Button>
             )}
             {job.hr_email && job.status === 'email_found' && (

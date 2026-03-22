@@ -8,6 +8,7 @@ interface KanbanBoardProps {
   onDelete?: (id: string) => void
   onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
+  findingEmail?: string | null
 }
 
 const columns: { status: JobStatus; label: string; color: string }[] = [
@@ -19,7 +20,7 @@ const columns: { status: JobStatus; label: string; color: string }[] = [
   { status: 'rejected', label: 'Rejected', color: 'bg-red-200' },
 ]
 
-export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail }: KanbanBoardProps) {
+export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, findingEmail }: KanbanBoardProps) {
   return (
     <div className="flex gap-4 p-8 overflow-x-auto min-h-full">
       {columns.map((column) => {
@@ -47,6 +48,7 @@ export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail }: Kanban
                     onDelete={onDelete}
                     onFindEmail={onFindEmail}
                     onSendEmail={onSendEmail}
+                    findingEmail={findingEmail}
                   />
                 ))
               )}

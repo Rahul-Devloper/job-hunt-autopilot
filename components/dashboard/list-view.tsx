@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Mail, Trash2 } from 'lucide-react'
+import { ExternalLink, Mail, Trash2, Loader2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
@@ -13,6 +13,7 @@ interface ListViewProps {
   onDelete?: (id: string) => void
   onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
+  findingEmail?: string | null
 }
 
 const statusColors: Record<string, string> = {
@@ -33,7 +34,7 @@ const statusLabels: Record<string, string> = {
   rejected: 'Rejected',
 }
 
-export function ListView({ jobs, onDelete, onFindEmail, onSendEmail }: ListViewProps) {
+export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, findingEmail }: ListViewProps) {
   return (
     <div className="p-8">
       <div className="overflow-hidden rounded-lg border bg-white">
@@ -99,8 +100,16 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail }: ListViewP
                         variant="outline"
                         className="text-xs h-7"
                         onClick={() => onFindEmail?.(job.id)}
+                        disabled={findingEmail === job.id}
                       >
-                        Find Email
+                        {findingEmail === job.id ? (
+                          <>
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Finding...
+                          </>
+                        ) : (
+                          'Find Email'
+                        )}
                       </Button>
                     )}
                     {job.hr_email && job.status === 'email_found' && (
