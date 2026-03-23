@@ -190,6 +190,7 @@ export type Database = {
           company_name: string
           created_at: string | null
           email_source: Database["public"]["Enums"]["email_source"] | null
+          email_type: Database["public"]["Enums"]["email_type"] | null
           hr_email: string | null
           hr_name: string | null
           id: string
@@ -208,6 +209,7 @@ export type Database = {
           company_name: string
           created_at?: string | null
           email_source?: Database["public"]["Enums"]["email_source"] | null
+          email_type?: Database["public"]["Enums"]["email_type"] | null
           hr_email?: string | null
           hr_name?: string | null
           id?: string
@@ -226,6 +228,7 @@ export type Database = {
           company_name?: string
           created_at?: string | null
           email_source?: Database["public"]["Enums"]["email_source"] | null
+          email_type?: Database["public"]["Enums"]["email_type"] | null
           hr_email?: string | null
           hr_name?: string | null
           id?: string

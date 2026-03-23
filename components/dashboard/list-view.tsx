@@ -86,8 +86,24 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, findingEmai
                     {statusLabels[job.status]}
                   </Badge>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {job.hr_email || '—'}
+                <td className="px-6 py-4">
+                  {job.hr_email ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-900">{job.hr_email}</span>
+                      {job.email_type === 'personal' && (
+                        <Badge className="gap-1 bg-green-100 text-green-800 border-green-200 hover:bg-green-100 text-xs">
+                          ★ Personal
+                        </Badge>
+                      )}
+                      {job.email_type === 'generic' && (
+                        <Badge variant="outline" className="gap-1 text-gray-500 text-xs">
+                          Generic
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">—</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                   {formatDistanceToNow(new Date(job.created_at!), { addSuffix: true })}

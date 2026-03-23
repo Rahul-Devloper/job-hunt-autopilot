@@ -78,6 +78,16 @@ export function JobCard({ job, onDelete, onFindEmail, onSendEmail, findingEmail 
                 <span className="truncate max-w-[120px]">{job.hr_email}</span>
               </Badge>
             )}
+            {job.email_type === 'personal' && (
+              <Badge className="gap-1 bg-green-100 text-green-800 border-green-200 hover:bg-green-100 text-xs">
+                ★ Personal
+              </Badge>
+            )}
+            {job.hr_email && job.email_type === 'generic' && (
+              <Badge variant="outline" className="gap-1 text-gray-500 text-xs">
+                Generic
+              </Badge>
+            )}
           </div>
 
           <div className="mt-3 flex gap-2">

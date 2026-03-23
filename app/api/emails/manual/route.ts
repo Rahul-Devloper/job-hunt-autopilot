@@ -6,13 +6,14 @@ const ManualEmailSchema = z.object({
   job_id: z.string().uuid(),
   hr_email: z.string().email(),
   hr_name: z.string().optional(),
+  email_type: z.enum(['personal', 'generic']).default('generic'),
   contribute: z.boolean().default(true),
 })
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { job_id, hr_email, hr_name, contribute } = ManualEmailSchema.parse(body)
+    const { job_id, hr_email, hr_name, email_type, contribute } = ManualEmailSchema.parse(body)
 
     const supabase = await createClient()
 
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
         hr_email,
         hr_name: hr_name || null,
         email_source: 'manual',
+        email_type,
         status: 'email_found',
         updated_at: new Date().toISOString(),
       })
@@ -48,10 +50,7 @@ export async function POST(request: Request) {
           company_domain: job.company_domain,
           company_name: job.company_name,
           email: hr_email,
-          email_type:
-            !hr_email.startsWith('hr@') && !hr_email.startsWith('recruiting@')
-              ? 'personal'
-              : 'generic',
+          email_type,
           verified_count: 0,
           failed_count: 0,
         })

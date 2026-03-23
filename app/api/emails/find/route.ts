@@ -32,20 +32,32 @@ async function verifyEmailViaDNS(email: string): Promise<boolean> {
 async function checkCommunityDatabase(
   supabase: Awaited<ReturnType<typeof createClient>>,
   companyDomain: string
-): Promise<string | null> {
-  const { data, error } = await supabase
+): Promise<{ email: string; type: 'personal' | 'generic' } | null> {
+  // Prefer personal emails first
+  const { data: personal } = await supabase
     .from('community_emails')
-    .select('email, verified_count, failed_count')
+    .select('email, email_type, verified_count')
     .eq('company_domain', companyDomain)
+    .eq('email_type', 'personal')
+    .gte('verified_count', 1)
     .order('verified_count', { ascending: false })
     .limit(1)
     .single()
 
-  if (error || !data) return null
+  if (personal) return { email: personal.email, type: 'personal' }
 
-  if ((data.verified_count ?? 0) >= 3 || (data.failed_count ?? 1) === 0) {
-    return data.email
-  }
+  // Fallback to generic
+  const { data: generic } = await supabase
+    .from('community_emails')
+    .select('email, email_type, verified_count')
+    .eq('company_domain', companyDomain)
+    .eq('email_type', 'generic')
+    .gte('verified_count', 3)
+    .order('verified_count', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (generic) return { email: generic.email, type: 'generic' }
 
   return null
 }
@@ -115,19 +127,23 @@ export async function POST(request: Request) {
 
     let foundEmail: string | null = null
     let source: 'community' | 'pattern' = 'community'
+    let emailType: 'personal' | 'generic' = 'generic'
 
     console.log('Step 1: Checking community database...')
-    foundEmail = await checkCommunityDatabase(supabase, company_domain)
+    const communityResult = await checkCommunityDatabase(supabase, company_domain)
 
-    if (foundEmail) {
-      console.log('Found in community DB:', foundEmail)
+    if (communityResult) {
+      console.log('Found in community DB:', communityResult.email, `(${communityResult.type})`)
+      foundEmail = communityResult.email
       source = 'community'
+      emailType = communityResult.type
     } else {
       console.log('Step 2: Trying pattern guessing...')
       foundEmail = await tryPatternGuessing(company_domain)
 
       if (foundEmail) {
         source = 'pattern'
+        emailType = 'generic'
         await saveToCommunityDB(supabase, company_domain, job.company_name, foundEmail)
       }
     }
@@ -146,6 +162,7 @@ export async function POST(request: Request) {
       .update({
         hr_email: foundEmail,
         email_source: source,
+        email_type: emailType,
         status: 'email_found',
         updated_at: new Date().toISOString(),
       })

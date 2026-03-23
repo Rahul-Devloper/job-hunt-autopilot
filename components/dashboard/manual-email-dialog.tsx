@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface ManualEmailDialogProps {
   open: boolean
@@ -31,6 +38,7 @@ export function ManualEmailDialog({
 }: ManualEmailDialogProps) {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
+  const [emailType, setEmailType] = useState<'personal' | 'generic'>('generic')
   const [contribute, setContribute] = useState(true)
   const [loading, setLoading] = useState(false)
 
@@ -46,6 +54,7 @@ export function ManualEmailDialog({
           job_id: jobId,
           hr_email: email,
           hr_name: name || undefined,
+          email_type: emailType,
           contribute,
         }),
       })
@@ -61,6 +70,7 @@ export function ManualEmailDialog({
       onClose()
       setEmail('')
       setName('')
+      setEmailType('generic')
     } catch (error) {
       console.error('Error saving email:', error)
       alert('Failed to save email. Please try again.')
@@ -102,6 +112,22 @@ export function ManualEmailDialog({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="email-type">Email Type</Label>
+              <Select value={emailType} onValueChange={(v) => setEmailType(v as 'personal' | 'generic')}>
+                <SelectTrigger id="email-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="generic">Generic (hr@, recruiting@, careers@)</SelectItem>
+                  <SelectItem value="personal">Personal Recruiter (john.smith@)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-gray-500">
+                Personal emails get better response rates!
+              </p>
             </div>
 
             <div className="flex items-center space-x-2">
