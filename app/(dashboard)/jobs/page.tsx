@@ -5,6 +5,7 @@ import { Header } from '@/components/dashboard/header'
 import { KanbanBoard } from '@/components/dashboard/kanban-board'
 import { ListView } from '@/components/dashboard/list-view'
 import { ManualEmailDialog } from '@/components/dashboard/manual-email-dialog'
+import { EmailComposer } from '@/components/dashboard/email-composer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
 import type { Job } from '@/types'
@@ -19,6 +20,7 @@ export default function JobsPage() {
     jobId: string
     companyName: string
   } | null>(null)
+  const [emailComposer, setEmailComposer] = useState<Job | null>(null)
 
   useEffect(() => {
     fetchJobs()
@@ -111,7 +113,13 @@ export default function JobsPage() {
   }
 
   function handleSendEmail(id: string) {
-    alert('Email sending coming in Session 6!')
+    const job = jobs.find((j) => j.id === id)
+    if (!job) return
+    if (!job.hr_email) {
+      alert('No email found for this job. Find an email first.')
+      return
+    }
+    setEmailComposer(job)
   }
 
   if (loading) {
@@ -191,6 +199,18 @@ export default function JobsPage() {
           jobId={manualEmailDialog.jobId}
           companyName={manualEmailDialog.companyName}
           onSuccess={fetchJobs}
+        />
+      )}
+
+      {emailComposer && (
+        <EmailComposer
+          open={!!emailComposer}
+          onClose={() => setEmailComposer(null)}
+          job={emailComposer}
+          onSuccess={() => {
+            fetchJobs()
+            setEmailComposer(null)
+          }}
         />
       )}
     </div>

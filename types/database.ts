@@ -249,6 +249,8 @@ export type Database = {
           auto_followup_enabled: boolean | null
           created_at: string | null
           followup_delay_days: number | null
+          gmail_access_token: string | null
+          gmail_refresh_token: string | null
           hunter_api_key: string | null
           id: string
           updated_at: string | null
@@ -259,6 +261,8 @@ export type Database = {
           auto_followup_enabled?: boolean | null
           created_at?: string | null
           followup_delay_days?: number | null
+          gmail_access_token?: string | null
+          gmail_refresh_token?: string | null
           hunter_api_key?: string | null
           id?: string
           updated_at?: string | null
@@ -269,6 +273,8 @@ export type Database = {
           auto_followup_enabled?: boolean | null
           created_at?: string | null
           followup_delay_days?: number | null
+          gmail_access_token?: string | null
+          gmail_refresh_token?: string | null
           hunter_api_key?: string | null
           id?: string
           updated_at?: string | null
