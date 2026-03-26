@@ -12,7 +12,7 @@ const SendEmailSchema = z.object({
 })
 
 function decrypt(encrypted: string): string {
-  const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex')
+  const key = Buffer.from(process.env.ENCRYPTION_KEY!)
   const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.alloc(16, 0))
   return decipher.update(encrypted, 'hex', 'utf8') + decipher.final('utf8')
 }

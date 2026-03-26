@@ -10,7 +10,7 @@ const oauth2Client = new google.auth.OAuth2(
 )
 
 function encrypt(text: string): string {
-  const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex')
+  const key = Buffer.from(process.env.ENCRYPTION_KEY!)
   const cipher = crypto.createCipheriv('aes-256-cbc', key, Buffer.alloc(16, 0))
   return cipher.update(text, 'utf8', 'hex') + cipher.final('hex')
 }
