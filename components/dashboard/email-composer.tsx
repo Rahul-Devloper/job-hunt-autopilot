@@ -34,16 +34,14 @@ Best regards,
 [Your Name]`
 
 export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerProps) {
-  const [subject, setSubject] = useState(
-    `Application for ${job.job_title} at ${job.company_name}`
-  )
+  const [subject, setSubject] = useState(`Your Next ${job.job_title}`)
   const [body, setBody] = useState(DEFAULT_TEMPLATE)
   const [sending, setSending] = useState(false)
 
   const previewBody = body
     .replace(/{company}/g, job.company_name)
     .replace(/{role}/g, job.job_title)
-    .replace(/{hr_name}/g, job.hr_name || 'there')
+    .replace(/{hr_name}/g, job.hr_name || `${job.company_name} hiring team`)
 
   async function handleSend() {
     setSending(true)
