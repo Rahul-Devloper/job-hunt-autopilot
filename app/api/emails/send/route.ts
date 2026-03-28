@@ -124,6 +124,7 @@ export async function POST(request: Request) {
 
     // Build raw email
     const message = [
+      `From: Rahul Ramesh <rameshrahul26@gmail.com>`,
       `To: ${to}`,
       `Subject: ${subject}`,
       'MIME-Version: 1.0',
