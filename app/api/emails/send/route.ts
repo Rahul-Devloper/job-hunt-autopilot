@@ -21,6 +21,32 @@ function generateTrackingId(): string {
   return crypto.randomBytes(16).toString('hex')
 }
 
+async function createTrackedLinkedIn(
+  supabase: ReturnType<typeof createServiceClient>,
+  userId: string,
+  jobId: string,
+  emailSentId: string,
+  linkedinUrl: string
+): Promise<string> {
+  const trackingId = generateTrackingId()
+
+  const { error } = await supabase.from('link_clicks').insert({
+    user_id: userId,
+    job_id: jobId,
+    email_sent_id: emailSentId,
+    link_type: 'linkedin',
+    original_url: linkedinUrl,
+    tracking_id: trackingId,
+  })
+
+  if (error) {
+    console.error('Error creating tracked link:', error)
+    return linkedinUrl
+  }
+
+  return `${process.env.NEXT_PUBLIC_APP_URL}/api/track/link/${trackingId}`
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -29,10 +55,10 @@ export async function POST(request: Request) {
     const supabase = createServiceClient()
     const userId = process.env.DEMO_USER_ID!
 
-    // Get Gmail tokens
+    // Get Gmail tokens and LinkedIn URL
     const { data: settings, error: settingsError } = await supabase
       .from('user_settings')
-      .select('gmail_refresh_token, gmail_access_token')
+      .select('gmail_refresh_token, gmail_access_token, linkedin_url')
       .eq('user_id', userId)
       .single()
 
@@ -56,11 +82,45 @@ export async function POST(request: Request) {
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client })
 
-    // Generate tracking ID and pixel
+    // Save email record FIRST to get the ID for link tracking
     const trackingId = generateTrackingId()
+    const { data: emailRecord, error: emailError } = await supabase
+      .from('emails_sent')
+      .insert({
+        job_id,
+        user_id: userId,
+        to_email: to,
+        subject,
+        body: emailBody,
+        tracking_id: trackingId,
+        sent_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (emailError || !emailRecord) {
+      console.error('Error saving email record:', emailError)
+      throw new Error('Failed to save email record')
+    }
+
+    // Build email body with LinkedIn signature if available
+    let fullEmailBody = emailBody
+
+    if (settings.linkedin_url) {
+      const trackedLinkedIn = await createTrackedLinkedIn(
+        supabase,
+        userId,
+        job_id,
+        emailRecord.id,
+        settings.linkedin_url
+      )
+      fullEmailBody += `\n\n---\nLet's connect on LinkedIn: ${trackedLinkedIn}`
+    }
+
+    // Add tracking pixel
     const trackingPixelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${trackingId}`
     const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" />`
-    const htmlBody = emailBody.replace(/\n/g, '<br>') + trackingPixel
+    const htmlBody = fullEmailBody.replace(/\n/g, '<br>') + trackingPixel
 
     // Build raw email
     const message = [
@@ -84,26 +144,7 @@ export async function POST(request: Request) {
       requestBody: { raw: encodedMessage },
     })
 
-    // Save email record
-    const { data: emailRecord, error: emailError } = await supabase
-      .from('emails_sent')
-      .insert({
-        job_id,
-        user_id: userId,
-        to_email: to,
-        subject,
-        body: emailBody,
-        tracking_id: trackingId,
-        sent_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
-
-    if (emailError) {
-      console.error('Error saving email record:', emailError)
-    }
-
-    // Update job status to email_sent
+    // Update job status
     await supabase
       .from('jobs')
       .update({ status: 'email_sent', updated_at: new Date().toISOString() })
@@ -116,7 +157,7 @@ export async function POST(request: Request) {
     await supabase.from('followup_reminders').insert({
       job_id,
       user_id: userId,
-      email_sent_id: emailRecord?.id ?? null,
+      email_sent_id: emailRecord.id,
       followup_number: 1,
       scheduled_for: followUpDate.toISOString(),
     })

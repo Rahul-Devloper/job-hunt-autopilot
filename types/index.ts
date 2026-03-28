@@ -21,6 +21,9 @@ export type EmailVerificationInsert = Database['public']['Tables']['email_verifi
 export type FollowupReminder = Database['public']['Tables']['followup_reminders']['Row']
 export type FollowupReminderInsert = Database['public']['Tables']['followup_reminders']['Insert']
 
+export type LinkClick = Database['public']['Tables']['link_clicks']['Row']
+export type LinkClickInsert = Database['public']['Tables']['link_clicks']['Insert']
+
 export type UserSettings = Database['public']['Tables']['user_settings']['Row']
 export type UserSettingsInsert = Database['public']['Tables']['user_settings']['Insert']
 export type UserSettingsUpdate = Database['public']['Tables']['user_settings']['Update']

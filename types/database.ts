@@ -88,6 +88,7 @@ export type Database = {
       emails_sent: {
         Row: {
           body: string
+          clicked_at: string | null
           created_at: string | null
           id: string
           job_id: string
@@ -101,6 +102,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          clicked_at?: string | null
           created_at?: string | null
           id?: string
           job_id: string
@@ -114,6 +116,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          clicked_at?: string | null
           created_at?: string | null
           id?: string
           job_id?: string
@@ -243,6 +246,66 @@ export type Database = {
         }
         Relationships: []
       }
+      link_clicks: {
+        Row: {
+          click_count: number
+          clicked_at: string | null
+          created_at: string | null
+          email_sent_id: string | null
+          id: string
+          ip_address: string | null
+          job_id: string | null
+          link_type: string
+          original_url: string
+          tracking_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          click_count?: number
+          clicked_at?: string | null
+          created_at?: string | null
+          email_sent_id?: string | null
+          id?: string
+          ip_address?: string | null
+          job_id?: string | null
+          link_type: string
+          original_url: string
+          tracking_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          click_count?: number
+          clicked_at?: string | null
+          created_at?: string | null
+          email_sent_id?: string | null
+          id?: string
+          ip_address?: string | null
+          job_id?: string | null
+          link_type?: string
+          original_url?: string
+          tracking_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_clicks_email_sent_id_fkey"
+            columns: ["email_sent_id"]
+            isOneToOne: false
+            referencedRelation: "emails_sent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_clicks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           apollo_api_key: string | null
@@ -253,6 +316,7 @@ export type Database = {
           gmail_refresh_token: string | null
           hunter_api_key: string | null
           id: string
+          linkedin_url: string | null
           updated_at: string | null
           user_id: string
         }
@@ -265,6 +329,7 @@ export type Database = {
           gmail_refresh_token?: string | null
           hunter_api_key?: string | null
           id?: string
+          linkedin_url?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -277,6 +342,7 @@ export type Database = {
           gmail_refresh_token?: string | null
           hunter_api_key?: string | null
           id?: string
+          linkedin_url?: string | null
           updated_at?: string | null
           user_id?: string
         }
