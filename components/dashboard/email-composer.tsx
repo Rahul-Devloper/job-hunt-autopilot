@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { createClient } from '@/lib/supabase/client'
 import type { Job } from '@/types'
 
 interface EmailComposerProps {
@@ -37,11 +38,34 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
   const [subject, setSubject] = useState(`Your Next ${job.job_title}`)
   const [body, setBody] = useState(DEFAULT_TEMPLATE)
   const [sending, setSending] = useState(false)
+  const [linkedinUrl, setLinkedinUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchLinkedIn() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('user_settings')
+        .select('linkedin_url')
+        .eq('user_id', 'bb468d21-2326-41bf-9c80-3edffa016aca')
+        .single()
+
+      setLinkedinUrl(data?.linkedin_url ?? null)
+      console.log('Fetched LinkedIn URL:', JSON.stringify(data))
+    }
+
+    if (open) {
+      fetchLinkedIn()
+    }
+  }, [open])
 
   const previewBody = body
     .replace(/{company}/g, job.company_name)
     .replace(/{role}/g, job.job_title)
     .replace(/{hr_name}/g, job.hr_name || `${job.company_name} hiring team`)
+
+  const signaturePreview = linkedinUrl
+    ? `\n\n---\nLet's connect on LinkedIn: ${linkedinUrl}`
+    : '\n\n---\n⚠️ No LinkedIn URL set (add in user_settings table)'
 
   async function handleSend() {
     setSending(true)
@@ -76,47 +100,57 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className='max-w-2xl'>
         <DialogHeader>
           <DialogTitle>Send Email</DialogTitle>
           <DialogDescription>
             Sending to: {job.hr_email}
-            {job.email_type === 'personal' ? ' (Personal email)' : ' (Generic email)'}
+            {job.email_type === 'personal'
+              ? ' (Personal email)'
+              : ' (Generic email)'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className='space-y-4'>
           <div>
-            <Label htmlFor="subject">Subject</Label>
+            <Label htmlFor='subject'>Subject</Label>
             <Input
-              id="subject"
+              id='subject'
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
           </div>
 
           <div>
-            <Label htmlFor="body">Email Body</Label>
+            <Label htmlFor='body'>Email Body</Label>
             <Textarea
-              id="body"
+              id='body'
               rows={10}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              className="font-mono text-sm"
+              className='font-mono text-sm'
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className='mt-1 text-xs text-gray-500'>
               Variables: {'{company}'}, {'{role}'}, {'{hr_name}'}
             </p>
           </div>
 
-          <div className="rounded-lg border bg-gray-50 p-4">
-            <p className="mb-2 text-sm font-medium text-gray-700">Preview:</p>
-            <div className="whitespace-pre-wrap text-sm text-gray-900">{previewBody}</div>
+          <div className='rounded-lg border bg-gray-50 p-4'>
+            <p className='mb-2 text-sm font-medium text-gray-700'>Preview:</p>
+            <div className='whitespace-pre-wrap text-sm text-gray-900'>
+              {previewBody}
+              <span className='text-blue-600'>{signaturePreview}</span>
+            </div>
+            {linkedinUrl && (
+              <p className='mt-2 text-xs text-gray-500'>
+                LinkedIn link will be tracked when sent
+              </p>
+            )}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant='outline' onClick={onClose}>
             Cancel
           </Button>
           <Button onClick={handleSend} disabled={sending}>
