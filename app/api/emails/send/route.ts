@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         emailRecord.id,
         settings.linkedin_url
       )
-      fullEmailBody += `\n\n---\nLet's connect on LinkedIn: <a href="${trackedLinkedIn}">${settings.linkedin_url}</a>`
+      fullEmailBody += `\n\n---\nLinkedIn: <a href="${trackedLinkedIn}">${settings.linkedin_url}</a>`
     }
 
     // Add tracking pixel
