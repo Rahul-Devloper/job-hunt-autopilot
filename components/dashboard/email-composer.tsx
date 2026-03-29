@@ -100,8 +100,8 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className='max-w-2xl'>
-        <DialogHeader>
+      <DialogContent className='flex max-h-[90vh] w-[clamp(480px,55vw,800px)] max-w-[calc(100vw-2rem)] flex-col'>
+        <DialogHeader className='shrink-0'>
           <DialogTitle>Send Email</DialogTitle>
           <DialogDescription>
             Sending to: {job.hr_email}
@@ -111,7 +111,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-4'>
+        <div className='min-h-0 flex-1 overflow-y-auto space-y-4 pr-1'>
           <div>
             <Label htmlFor='subject'>Subject</Label>
             <Input
@@ -125,7 +125,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
             <Label htmlFor='body'>Email Body</Label>
             <Textarea
               id='body'
-              rows={10}
+              rows={7}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               className='font-mono text-sm'
@@ -135,7 +135,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
             </p>
           </div>
 
-          <div className='rounded-lg border bg-gray-50 p-4'>
+          <div className='rounded-lg border bg-gray-50 p-3'>
             <p className='mb-2 text-sm font-medium text-gray-700'>Preview:</p>
             <div className='whitespace-pre-wrap text-sm text-gray-900'>
               {previewBody}
@@ -149,7 +149,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className='shrink-0 pt-2'>
           <Button variant='outline' onClick={onClose}>
             Cancel
           </Button>
