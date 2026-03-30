@@ -311,6 +311,7 @@ export type Database = {
           apollo_api_key: string | null
           auto_followup_enabled: boolean | null
           created_at: string | null
+          email_provider: string | null
           followup_delay_days: number | null
           gmail_access_token: string | null
           gmail_refresh_token: string | null
@@ -319,11 +320,14 @@ export type Database = {
           linkedin_url: string | null
           updated_at: string | null
           user_id: string
+          yahoo_email: string | null
+          yahoo_password_encrypted: string | null
         }
         Insert: {
           apollo_api_key?: string | null
           auto_followup_enabled?: boolean | null
           created_at?: string | null
+          email_provider?: string | null
           followup_delay_days?: number | null
           gmail_access_token?: string | null
           gmail_refresh_token?: string | null
@@ -332,11 +336,14 @@ export type Database = {
           linkedin_url?: string | null
           updated_at?: string | null
           user_id: string
+          yahoo_email?: string | null
+          yahoo_password_encrypted?: string | null
         }
         Update: {
           apollo_api_key?: string | null
           auto_followup_enabled?: boolean | null
           created_at?: string | null
+          email_provider?: string | null
           followup_delay_days?: number | null
           gmail_access_token?: string | null
           gmail_refresh_token?: string | null
@@ -345,6 +352,8 @@ export type Database = {
           linkedin_url?: string | null
           updated_at?: string | null
           user_id?: string
+          yahoo_email?: string | null
+          yahoo_password_encrypted?: string | null
         }
         Relationships: []
       }

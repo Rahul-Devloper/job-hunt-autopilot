@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { google } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/server'
+import { sendViaGmail, sendViaYahoo } from '@/lib/email-service'
 import { z } from 'zod'
 import crypto from 'crypto'
 
@@ -10,12 +10,6 @@ const SendEmailSchema = z.object({
   subject: z.string().min(1),
   body: z.string().min(1),
 })
-
-function decrypt(encrypted: string): string {
-  const key = Buffer.from(process.env.ENCRYPTION_KEY!)
-  const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.alloc(16, 0))
-  return decipher.update(encrypted, 'hex', 'utf8') + decipher.final('utf8')
-}
 
 function generateTrackingId(): string {
   return crypto.randomBytes(16).toString('hex')
@@ -55,34 +49,36 @@ export async function POST(request: Request) {
     const supabase = createServiceClient()
     const userId = process.env.DEMO_USER_ID!
 
-    // Get Gmail tokens and LinkedIn URL
     const { data: settings, error: settingsError } = await supabase
       .from('user_settings')
-      .select('gmail_refresh_token, gmail_access_token, linkedin_url')
+      .select('*')
       .eq('user_id', userId)
       .single()
 
-    if (settingsError || !settings?.gmail_refresh_token) {
-      return NextResponse.json(
-        { error: 'Gmail not connected. Please connect Gmail in Settings.' },
-        { status: 400 }
-      )
+    if (settingsError || !settings) {
+      return NextResponse.json({ error: 'User settings not found' }, { status: 400 })
     }
 
-    // Set up OAuth client
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/gmail/callback`
-    )
+    const provider = settings.email_provider || 'gmail'
 
-    oauth2Client.setCredentials({
-      refresh_token: decrypt(settings.gmail_refresh_token),
-    })
+    // Validate provider credentials before doing any work
+    if (provider === 'yahoo') {
+      if (!settings.yahoo_email || !settings.yahoo_password_encrypted) {
+        return NextResponse.json(
+          { error: 'Yahoo email not configured. Add credentials in Settings.' },
+          { status: 400 }
+        )
+      }
+    } else {
+      if (!settings.gmail_refresh_token) {
+        return NextResponse.json(
+          { error: 'Gmail not connected. Please connect Gmail in Settings.' },
+          { status: 400 }
+        )
+      }
+    }
 
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client })
-
-    // Save email record FIRST to get the ID for link tracking
+    // Save email record first (needed for link tracking)
     const trackingId = generateTrackingId()
     const { data: emailRecord, error: emailError } = await supabase
       .from('emails_sent')
@@ -103,7 +99,7 @@ export async function POST(request: Request) {
       throw new Error('Failed to save email record')
     }
 
-    // Build email body with LinkedIn signature if available
+    // Build body with tracked LinkedIn signature
     let fullEmailBody = emailBody
 
     if (settings.linkedin_url) {
@@ -122,28 +118,16 @@ export async function POST(request: Request) {
     const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" />`
     const htmlBody = fullEmailBody.replace(/\n/g, '<br>') + trackingPixel
 
-    // Build raw email
-    const message = [
-      `From: Rahul Ramesh <rameshrahul26@gmail.com>`,
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=utf-8',
-      '',
-      htmlBody,
-    ].join('\n')
+    // Send via the selected provider
+    console.log(`📧 Sending via: ${provider}`)
 
-    const encodedMessage = Buffer.from(message)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '')
+    if (provider === 'yahoo') {
+      await sendViaYahoo(settings.yahoo_email!, settings.yahoo_password_encrypted!, to, subject, htmlBody)
+    } else {
+      await sendViaGmail(settings.gmail_refresh_token!, to, subject, htmlBody)
+    }
 
-    // Send via Gmail API
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw: encodedMessage },
-    })
+    console.log(`✅ Email sent via ${provider}`)
 
     // Update job status
     await supabase
@@ -165,15 +149,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Email sent successfully!',
+      message: `Email sent successfully via ${provider}!`,
       tracking_id: trackingId,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.issues },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
     }
 
     console.error('Send email error:', error)
