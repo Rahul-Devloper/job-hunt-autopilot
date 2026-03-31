@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendViaGmail, sendViaYahoo } from '@/lib/email-service'
 import { z } from 'zod'
@@ -43,11 +44,12 @@ async function createTrackedLinkedIn(
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuth()
     const body = await request.json()
     const { job_id, to, subject, body: emailBody } = SendEmailSchema.parse(body)
 
     const supabase = createServiceClient()
-    const userId = process.env.DEMO_USER_ID!
+    const userId = user.id
 
     const { data: settings, error: settingsError } = await supabase
       .from('user_settings')
@@ -61,7 +63,6 @@ export async function POST(request: Request) {
 
     const provider = settings.email_provider || 'gmail'
 
-    // Validate provider credentials before doing any work
     if (provider === 'yahoo') {
       if (!settings.yahoo_email || !settings.yahoo_password_encrypted) {
         return NextResponse.json(
@@ -118,7 +119,6 @@ export async function POST(request: Request) {
     const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" />`
     const htmlBody = fullEmailBody.replace(/\n/g, '<br>') + trackingPixel
 
-    // Send via the selected provider
     console.log(`📧 Sending via: ${provider}`)
 
     if (provider === 'yahoo') {
@@ -129,7 +129,6 @@ export async function POST(request: Request) {
 
     console.log(`✅ Email sent via ${provider}`)
 
-    // Update job status
     await supabase
       .from('jobs')
       .update({ status: 'email_sent', updated_at: new Date().toISOString() })

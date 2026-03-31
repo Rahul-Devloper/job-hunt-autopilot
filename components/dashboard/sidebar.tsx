@@ -9,6 +9,7 @@ import {
   Settings,
   Users,
   LogOut,
+  User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
@@ -21,7 +22,11 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  userEmail: string
+}
+
+export function Sidebar({ userEmail }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -58,13 +63,19 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t p-4">
+      <div className="border-t p-4 space-y-2">
+        <div className="flex items-center gap-3 px-3 py-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 shrink-0">
+            <User className="h-4 w-4 text-blue-600" />
+          </div>
+          <p className="truncate text-sm text-gray-700">{userEmail}</p>
+        </div>
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         >
           <LogOut className="h-5 w-5" />
-          Logout
+          Sign Out
         </button>
       </div>
     </div>

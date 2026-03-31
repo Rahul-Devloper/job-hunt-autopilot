@@ -32,15 +32,12 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  console.log('Middleware user==>', user)
-
   // Protect dashboard routes
   const protectedPaths = ['/dashboard', '/jobs', '/analytics', '/settings', '/community']
   const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p))
-  // TODO: re-enable after login is wired up
-  // if (isProtected && !user) {
-  //   return NextResponse.redirect(new URL('/login', request.url))
-  // }
+  if (isProtected && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 
   // Redirect to jobs if already logged in
   if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') && user) {

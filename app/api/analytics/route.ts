@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
+    const user = await requireAuth()
     const supabase = createServiceClient()
-    const userId = process.env.DEMO_USER_ID!
+    const userId = user.id
 
     const [jobsResult, emailsResult, clicksResult] = await Promise.all([
       supabase.from('jobs').select('*').eq('user_id', userId),

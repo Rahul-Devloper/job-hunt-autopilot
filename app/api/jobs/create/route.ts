@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const JobSchema = z.object({
@@ -13,6 +13,8 @@ const JobSchema = z.object({
   status: z
     .enum(['captured', 'email_found', 'email_sent', 'interview', 'offer', 'rejected'])
     .default('captured'),
+  // Optional: extension sends this after user logs in via web
+  user_id: z.string().uuid().optional(),
 })
 
 export async function POST(request: Request) {
@@ -20,15 +22,30 @@ export async function POST(request: Request) {
     const body = await request.json()
     const validatedData = JobSchema.parse(body)
 
-    const supabase = createServiceClient()
+    // Try session-based auth first (web app)
+    const supabaseAuth = await createClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
 
-    // TODO: replace with real user from extension auth
-    // Get this from: Supabase Dashboard → Authentication → Users → copy your user ID
-    const demoUserId = process.env.DEMO_USER_ID || '00000000-0000-0000-0000-000000000000'
+    let userId: string
+    let supabase: ReturnType<typeof createServiceClient>
+
+    if (user) {
+      // Authenticated via session (web app)
+      userId = user.id
+      supabase = createServiceClient()
+    } else if (validatedData.user_id) {
+      // Extension sends user_id after login
+      userId = validatedData.user_id
+      supabase = createServiceClient()
+    } else {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { user_id: _removed, ...jobData } = validatedData
 
     const { data, error } = await supabase
       .from('jobs')
-      .insert({ ...validatedData, user_id: demoUserId })
+      .insert({ ...jobData, user_id: userId })
       .select()
       .single()
 

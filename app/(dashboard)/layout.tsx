@@ -1,13 +1,16 @@
+import { requireAuth } from '@/lib/auth'
 import { Sidebar } from '@/components/dashboard/sidebar'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const user = await requireAuth()
+
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+      <Sidebar userEmail={user.email ?? ''} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {children}
       </div>

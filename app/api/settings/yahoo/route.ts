@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/email-service'
 import { z } from 'zod'
@@ -10,11 +11,11 @@ const YahooSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuth()
     const body = await request.json()
     const { yahoo_email, yahoo_password } = YahooSchema.parse(body)
 
     const supabase = createServiceClient()
-    const userId = process.env.DEMO_USER_ID!
 
     const { error } = await supabase
       .from('user_settings')
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
         email_provider: 'yahoo',
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
 
     if (error) throw error
 
