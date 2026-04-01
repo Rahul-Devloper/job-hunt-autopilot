@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 
 const oauth2Client = new google.auth.OAuth2(
@@ -20,12 +20,22 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
 
   if (!code) {
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/settings?error=no_code`
-    )
+    return new Response(closePopupScript('error=no_code'), {
+      headers: { 'Content-Type': 'text/html' },
+    })
   }
 
   try {
+    // Get authenticated user from session cookies
+    const supabaseAuth = await createClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+
+    if (!user) {
+      return new Response(closePopupScript('error=not_authenticated'), {
+        headers: { 'Content-Type': 'text/html' },
+      })
+    }
+
     const { tokens } = await oauth2Client.getToken(code)
 
     if (!tokens.refresh_token) {
@@ -33,13 +43,12 @@ export async function GET(request: Request) {
     }
 
     const supabase = createServiceClient()
-    const userId = process.env.DEMO_USER_ID!
 
     const { error } = await supabase
       .from('user_settings')
       .upsert(
         {
-          user_id: userId,
+          user_id: user.id,
           gmail_refresh_token: encrypt(tokens.refresh_token),
           gmail_access_token: tokens.access_token ? encrypt(tokens.access_token) : null,
           updated_at: new Date().toISOString(),
@@ -49,13 +58,25 @@ export async function GET(request: Request) {
 
     if (error) throw error
 
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/settings?gmail=connected`
-    )
+    return new Response(closePopupScript('gmail=connected'), {
+      headers: { 'Content-Type': 'text/html' },
+    })
   } catch (error) {
     console.error('OAuth callback error:', error)
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/settings?error=auth_failed`
-    )
+    return new Response(closePopupScript('error=auth_failed'), {
+      headers: { 'Content-Type': 'text/html' },
+    })
   }
+}
+
+// Closes the popup and sends a message to the parent window
+function closePopupScript(message: string) {
+  return `<!DOCTYPE html><html><body><script>
+    if (window.opener) {
+      window.opener.postMessage({ type: 'gmail_oauth', params: '${message}' }, '*');
+      window.close();
+    } else {
+      window.location.href = '/settings?${message}';
+    }
+  </script></body></html>`
 }

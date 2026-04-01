@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +10,8 @@ import Link from 'next/link'
 
 export default function SignupPage() {
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/jobs'
 
   async function handleGoogleSignUp() {
     setLoading(true)
@@ -17,7 +20,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -51,7 +54,10 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-gray-500">
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link
+            href={`/login${redirectTo !== '/jobs' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="text-blue-600 hover:underline"
+          >
             Sign in
           </Link>
         </p>

@@ -1,35 +1,73 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/dashboard/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Check, Mail } from 'lucide-react'
+import { Check, Mail, AlertCircle } from 'lucide-react'
 
 export default function SettingsPage() {
-  const searchParams = useSearchParams()
   const [gmailConnected, setGmailConnected] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
   const [yahooEmail, setYahooEmail] = useState('')
   const [yahooPassword, setYahooPassword] = useState('')
   const [yahooSaved, setYahooSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (searchParams.get('gmail') === 'connected') {
-      setGmailConnected(true)
-      alert('Gmail connected successfully!')
+    checkStatus()
+
+    // Listen for Gmail OAuth popup to signal success
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.type === 'gmail_oauth') {
+        if (e.data.params === 'gmail=connected') {
+          setGmailConnected(true)
+        } else {
+          alert(`Gmail connection failed. Please try again.`)
+        }
+      }
     }
-    if (searchParams.get('error')) {
-      const err = searchParams.get('error')
-      alert(`Failed to connect Gmail: ${err}. Please try again.`)
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  async function checkStatus() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      setUserEmail(user.email ?? '')
+
+      const { data: settings } = await supabase
+        .from('user_settings')
+        .select('gmail_refresh_token')
+        .eq('user_id', user.id)
+        .single()
+
+      if (settings?.gmail_refresh_token) {
+        setGmailConnected(true)
+      }
     }
-  }, [searchParams])
+
+    setLoading(false)
+  }
 
   function handleConnectGmail() {
-    window.location.href = '/api/auth/gmail'
+    const width = 500
+    const height = 600
+    const left = window.screen.width / 2 - width / 2
+    const top = window.screen.height / 2 - height / 2
+
+    window.open(
+      '/api/auth/gmail',
+      'Gmail OAuth',
+      `width=${width},height=${height},left=${left},top=${top}`
+    )
   }
 
   async function handleSaveYahoo() {
@@ -58,12 +96,37 @@ export default function SettingsPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col">
+        <Header title="Settings" description="Configure your account and integrations" />
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full flex-col">
       <Header title="Settings" description="Configure your account and integrations" />
 
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-2xl space-y-6">
+
+          {userEmail && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Account</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Signed in as:</span> {userEmail}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Gmail */}
           <Card>
             <CardHeader>
@@ -79,10 +142,16 @@ export default function SettingsPage() {
                   <span className="font-medium">Gmail Connected</span>
                 </div>
               ) : (
-                <Button onClick={handleConnectGmail}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Connect Gmail
-                </Button>
+                <div className="space-y-3">
+                  <Button onClick={handleConnectGmail}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Connect Gmail
+                  </Button>
+                  <div className="flex gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p>Opens a popup — make sure popups are allowed for this site.</p>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -158,6 +227,7 @@ export default function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+
         </div>
       </div>
     </div>

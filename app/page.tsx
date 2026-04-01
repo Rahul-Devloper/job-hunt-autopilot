@@ -1,8 +1,12 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Mail, TrendingUp, Zap } from 'lucide-react'
+import { getCurrentUser } from '@/lib/auth'
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const user = await getCurrentUser()
+  if (user) redirect('/jobs')
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <nav className="container mx-auto flex items-center justify-between p-6">
