@@ -41,7 +41,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { user_id: _removed, ...jobData } = validatedData
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { user_id: _uid, ...jobData } = validatedData
 
     const { data, error } = await supabase
       .from('jobs')

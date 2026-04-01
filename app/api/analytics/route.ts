@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+
+export const dynamic = 'force-dynamic'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET() {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Chrome } from 'lucide-react'
 import Link from 'next/link'
 
-export default function SignupPage() {
+function SignupForm() {
   const [loading, setLoading] = useState(false)
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/jobs'
@@ -73,5 +73,13 @@ export default function SignupPage() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="w-full h-48" />}>
+      <SignupForm />
+    </Suspense>
   )
 }
