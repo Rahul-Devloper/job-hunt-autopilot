@@ -1,5 +1,27 @@
 // Content script — runs on LinkedIn job pages
-console.log('Job Hunt Autopilot: Content script loaded')
+
+/**
+ * Auto-detect API URL based on current environment.
+ * NOTE: Content scripts run on LinkedIn, so window.location is always linkedin.com.
+ * This defaults to production. Override via chrome.storage.sync { apiUrl } for dev.
+ */
+function getApiUrl() {
+  if (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1') {
+    console.log('🔧 Environment: DEVELOPMENT (localhost)')
+    return 'http://localhost:3000'
+  }
+  if (window.location.hostname.includes('ngrok-free.app')) {
+    console.log('🧪 Environment: TESTING (ngrok)')
+    return window.location.origin
+  }
+  console.log('🚀 Environment: PRODUCTION (Vercel)')
+  return 'https://job-hunt-autopilot.vercel.app'
+}
+
+const API_URL = getApiUrl()
+console.log('%c🎯 Job Hunt Autopilot Active', 'color: #00ff00; font-weight: bold; font-size: 16px;')
+console.log('API URL:', API_URL)
 
 function isJobPage() {
   return window.location.href.includes('linkedin.com/jobs/view/')
@@ -63,10 +85,8 @@ async function handleCaptureClick(event) {
   try {
     const jobData = extractJobData()
 
-    const result = await chrome.storage.sync.get(['apiUrl'])
-    const apiUrl = result.apiUrl || 'http://localhost:3000'
-
-    const response = await fetch(`${apiUrl}/api/jobs/create`, {
+    console.log('📤 Sending job to:', `${API_URL}/api/jobs/create`)
+    const response = await fetch(`${API_URL}/api/jobs/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(jobData),
