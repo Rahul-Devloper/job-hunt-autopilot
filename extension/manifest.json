@@ -5,7 +5,8 @@
   "description": "Capture LinkedIn jobs with one click and track them automatically",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "notifications"
   ],
   "host_permissions": [
     "https://www.linkedin.com/*",

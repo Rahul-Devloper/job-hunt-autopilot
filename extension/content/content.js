@@ -23,6 +23,19 @@ const API_URL = getApiUrl()
 console.log('%c🎯 Job Hunt Autopilot Active', 'color: #00ff00; font-weight: bold; font-size: 16px;')
 console.log('API URL:', API_URL)
 
+/**
+ * Listen for token sent from the web app's /extension page
+ */
+window.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'JHA_SET_EXTENSION_TOKEN') {
+    const token = event.data.token
+    console.log('📝 Received extension token from web app')
+    chrome.storage.sync.set({ extensionToken: token }, function () {
+      console.log('✅ Extension token saved')
+    })
+  }
+})
+
 function isJobPage() {
   return window.location.href.includes('linkedin.com/jobs/view/')
 }
@@ -85,26 +98,109 @@ async function handleCaptureClick(event) {
   try {
     const jobData = extractJobData()
 
-    console.log('📤 Sending job to:', `${API_URL}/api/jobs/create`)
-    const response = await fetch(`${API_URL}/api/jobs/create`, {
+    // Get stored token
+    const storage = await chrome.storage.sync.get(['extensionToken'])
+    const token = storage.extensionToken
+
+    if (!token) {
+      console.error('❌ No extension token found!')
+      const shouldConnect = confirm(
+        '⚠️ Extension Not Connected\n\n' +
+        'You need to connect the extension first.\n\n' +
+        'Click OK to open the extension setup page.'
+      )
+      if (shouldConnect) {
+        chrome.tabs.create({ url: `${API_URL}/extension` })
+      }
+      resetButton()
+      return
+    }
+
+    console.log('📤 Sending job to:', `${API_URL}/api/extension/jobs/create`)
+    const response = await fetch(`${API_URL}/api/extension/jobs/create`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify(jobData),
     })
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`)
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      console.log('✅ Job captured successfully:', result.job?.id)
+
+      button.className = 'jha-capture-btn jha-success'
+      button.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 8L6 11L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Captured!</span>
+      `
+      setTimeout(resetButton, 2000)
+
+      // Handle expiry warning
+      if (result.warning) {
+        const warning = result.warning
+        console.warn('⚠️ Token expiry warning:', warning.message)
+
+        if (chrome.action) {
+          chrome.action.setBadgeText({ text: '!' })
+          chrome.action.setBadgeBackgroundColor({
+            color: warning.severity === 'urgent' ? '#FF0000' : '#FF9500',
+          })
+        }
+
+        if (warning.expiresIn <= 3) {
+          const reconnect = confirm(
+            `⚠️ URGENT: Extension Token Expires in ${warning.expiresIn} Day${warning.expiresIn === 1 ? '' : 's'}!\n\n` +
+            `Your extension will stop working soon.\n\n` +
+            `Click OK to reconnect now (takes 10 seconds).`
+          )
+          if (reconnect) {
+            chrome.tabs.create({ url: `${API_URL}/extension` })
+          }
+        } else {
+          alert(`⏰ Token Expiring Soon\n\n${warning.message}`)
+        }
+      }
+
+    } else {
+      console.error('❌ Failed to capture job:', result)
+
+      if (response.status === 401) {
+        const errorMessage = result.error || 'Invalid token'
+
+        if (errorMessage.includes('expired')) {
+          const reconnect = confirm(
+            '⏰ Extension Token Expired\n\n' +
+            'Your extension token has expired.\n\n' +
+            'Click OK to reconnect (takes 10 seconds).'
+          )
+          if (reconnect) {
+            chrome.tabs.create({ url: `${API_URL}/extension` })
+          }
+        } else if (errorMessage.includes('revoked')) {
+          alert('⚠️ Extension Token Revoked\n\nYour token was revoked. Opening setup page...')
+          chrome.tabs.create({ url: `${API_URL}/extension` })
+        } else {
+          alert(`⚠️ Authentication Error\n\n${errorMessage}\n\nPlease reconnect your extension.`)
+          chrome.tabs.create({ url: `${API_URL}/extension` })
+        }
+      } else {
+        alert(`Failed to capture job:\n\n${result.error}`)
+      }
+
+      button.className = 'jha-capture-btn jha-error'
+      button.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Error! Try again</span>
+      `
+      setTimeout(resetButton, 3000)
     }
-
-    button.className = 'jha-capture-btn jha-success'
-    button.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 8L6 11L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Captured!</span>
-    `
-
-    setTimeout(resetButton, 2000)
   } catch (error) {
     console.error('Job Hunt Autopilot: Error capturing job:', error)
 

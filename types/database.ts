@@ -186,6 +186,39 @@ export type Database = {
           },
         ]
       }
+      extension_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          token: string
+          device_name: string | null
+          last_used_at: string | null
+          created_at: string
+          expires_at: string
+          revoked: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          token: string
+          device_name?: string | null
+          last_used_at?: string | null
+          created_at?: string
+          expires_at?: string
+          revoked?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          token?: string
+          device_name?: string | null
+          last_used_at?: string | null
+          created_at?: string
+          expires_at?: string
+          revoked?: boolean
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           applied_at: string | null

@@ -10,6 +10,7 @@ import {
   Users,
   LogOut,
   User,
+  Chrome,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Jobs', href: '/jobs', icon: Briefcase },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Community', href: '/community', icon: Users },
+  { name: 'Extension', href: '/extension', icon: Chrome },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
