@@ -5,12 +5,8 @@
       "name": "Next.js: debug server-side",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npm run debug",
-      "serverReadyAction": {
-        "pattern": "started server on .+, url: (https?://.+)",
-        "uriFormat": "%s",
-        "action": "debugWithChrome"
-      }
+      "command": "npm run dev",
+      "env": { "NODE_OPTIONS": "--inspect" }
     },
     {
       "name": "Next.js: attach to router (port 9230)",

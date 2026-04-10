@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { validateExtensionToken } from '@/lib/extension-auth'
 
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization')
+    console.log('auth header==> ', authHeader)
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     const { data: job, error: jobError } = await supabase
       .from('jobs')
@@ -71,8 +72,7 @@ export async function POST(request: Request) {
       response.warning = {
         message: `Your extension token expires in ${validation.expiresIn} day${validation.expiresIn === 1 ? '' : 's'}. Please reconnect from /extension`,
         expiresIn: validation.expiresIn,
-        severity: validation.expiresIn! <= 1 ? 'urgent' : 'info',
-        // severity: validation.expiresIn! <= 3 ? 'urgent' : 'info',
+        severity: validation.expiresIn! <= 3 ? 'urgent' : 'info',
       }
     }
 

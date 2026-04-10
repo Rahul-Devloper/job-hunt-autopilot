@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const token = generateExtensionToken(user.id)
 
     const expiresAt = new Date()
-    expiresAt.setMinutes(expiresAt.getMinutes() + 3) // TODO: change back to 90 days for production
+    expiresAt.setDate(expiresAt.getDate() + 90)
 
     const { data: tokenData, error: tokenError } = await supabase
       .from('extension_tokens')

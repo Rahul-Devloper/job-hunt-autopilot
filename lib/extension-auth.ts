@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 /**
  * Generate a secure extension token
@@ -28,7 +28,7 @@ export async function validateExtensionToken(token: string): Promise<{
       return { valid: false, error: 'Invalid token format' }
     }
 
-    const supabase = await createClient()
+    const supabase = createServiceClient()
 
     const { data: tokenData, error: tokenError } = await supabase
       .from('extension_tokens')
@@ -53,8 +53,7 @@ export async function validateExtensionToken(token: string): Promise<{
 
     const msUntilExpiration = expiresAt.getTime() - now.getTime()
     const daysUntilExpiration = Math.ceil(msUntilExpiration / (1000 * 60 * 60 * 24))
-    const expiringSoon = daysUntilExpiration <= 2
-    // const expiringSoon = daysUntilExpiration <= 7
+    const expiringSoon = daysUntilExpiration <= 7
 
     // Update last_used_at async, don't await
     supabase

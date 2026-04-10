@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "debug": "set NODE_OPTIONS=--inspect && next dev",
+    "debug": "cross-env NODE_OPTIONS=--inspect next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -35,6 +35,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "cross-env": "^10.1.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",

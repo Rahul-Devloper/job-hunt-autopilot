@@ -50,6 +50,37 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+### 4. Chrome Extension Setup
+
+1. Go to `chrome://extensions` → Enable **Developer mode**
+2. Click **Load unpacked** → select the `extension/` folder
+3. Log in at `http://localhost:3000`
+4. Go to `/extension` page → click **Generate New Token**
+5. Token is automatically saved to the extension via `window.postMessage`
+6. Go to any LinkedIn job page → click **Capture Job**
+
+#### Extension Dev Mode (point extension to localhost instead of Vercel)
+
+Open the extension's service worker console (`chrome://extensions` → **Service worker**) and run:
+
+```js
+// Use localhost:3000 (local dev)
+chrome.storage.local.set({ devMode: true })
+
+// Use Vercel (production)
+chrome.storage.local.set({ devMode: false })
+```
+
+After setting devMode, reload the LinkedIn page. Extension API calls will now hit your local server and logs will appear in your terminal.
+
+> **Note:** Do not use ngrok to access the web app — after sign-in, Supabase redirects to the configured Site URL (Vercel). Use `localhost:3000` directly in your browser for the web app.
+
+#### Debugging API Routes
+
+In VS Code: **Run & Debug** (`Ctrl+Shift+D`) → select **"Next.js: debug server-side"** → press **F5**.
+
+Set breakpoints in any `app/api/**` route. Hit the endpoint once to compile the route (breakpoint turns solid red), then the second request will pause at the breakpoint.
+
 ## Project Status
 
 - [x] Session 1: Project Foundation (COMPLETE)

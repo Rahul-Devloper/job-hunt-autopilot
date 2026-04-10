@@ -5,23 +5,17 @@
  * NOTE: Content scripts run on LinkedIn, so window.location is always linkedin.com.
  * This defaults to production. Override via chrome.storage.sync { apiUrl } for dev.
  */
-function getApiUrl() {
-  if (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1') {
+async function getApiUrl() {
+  const { devMode } = await chrome.storage.local.get(['devMode'])
+  if (devMode) {
     console.log('🔧 Environment: DEVELOPMENT (localhost)')
     return 'http://localhost:3000'
-  }
-  if (window.location.hostname.includes('ngrok-free.app')) {
-    console.log('🧪 Environment: TESTING (ngrok)')
-    return window.location.origin
   }
   console.log('🚀 Environment: PRODUCTION (Vercel)')
   return 'https://job-hunt-autopilot.vercel.app'
 }
 
-const API_URL = getApiUrl()
 console.log('%c🎯 Job Hunt Autopilot Active', 'color: #00ff00; font-weight: bold; font-size: 16px;')
-console.log('API URL:', API_URL)
 
 /**
  * Listen for token sent from the web app's /extension page
@@ -97,10 +91,12 @@ async function handleCaptureClick(event) {
 
   try {
     const jobData = extractJobData()
+    const API_URL = await getApiUrl()
 
     // Get stored token
     const storage = await chrome.storage.sync.get(['extensionToken'])
     const token = storage.extensionToken
+    console.log('extensionToken from storage:', token ? token : '❌ Not found')
 
     if (!token) {
       console.error('❌ No extension token found!')
@@ -110,7 +106,7 @@ async function handleCaptureClick(event) {
         'Click OK to open the extension setup page.'
       )
       if (shouldConnect) {
-        chrome.tabs.create({ url: `${API_URL}/extension` })
+        window.open(`${API_URL}/extension`, '_blank')
       }
       resetButton()
       return
@@ -159,7 +155,7 @@ async function handleCaptureClick(event) {
             `Click OK to reconnect now (takes 10 seconds).`
           )
           if (reconnect) {
-            chrome.tabs.create({ url: `${API_URL}/extension` })
+            window.open(`${API_URL}/extension`, '_blank')
           }
         } else {
           alert(`⏰ Token Expiring Soon\n\n${warning.message}`)
@@ -179,14 +175,14 @@ async function handleCaptureClick(event) {
             'Click OK to reconnect (takes 10 seconds).'
           )
           if (reconnect) {
-            chrome.tabs.create({ url: `${API_URL}/extension` })
+            window.open(`${API_URL}/extension`, '_blank')
           }
         } else if (errorMessage.includes('revoked')) {
           alert('⚠️ Extension Token Revoked\n\nYour token was revoked. Opening setup page...')
-          chrome.tabs.create({ url: `${API_URL}/extension` })
+          window.open(`${API_URL}/extension`, '_blank')
         } else {
           alert(`⚠️ Authentication Error\n\n${errorMessage}\n\nPlease reconnect your extension.`)
-          chrome.tabs.create({ url: `${API_URL}/extension` })
+          window.open(`${API_URL}/extension`, '_blank')
         }
       } else {
         alert(`Failed to capture job:\n\n${result.error}`)

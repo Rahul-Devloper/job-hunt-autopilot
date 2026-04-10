@@ -28,6 +28,14 @@
       "js": ["content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "https://job-hunt-autopilot.vercel.app/*",
+        "https://*.ngrok-free.app/*"
+      ],
+      "js": ["content/content.js"]
     }
   ],
   "background": {
