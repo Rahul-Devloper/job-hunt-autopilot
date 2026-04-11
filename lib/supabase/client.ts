@@ -8,10 +8,6 @@ export function createClient() {
     {
       auth: {
         flowType: 'pkce',
-        redirectTo:
-          typeof window !== 'undefined'
-            ? `${window.location.origin}/api/auth/callback`
-            : undefined,
       },
     }
   )

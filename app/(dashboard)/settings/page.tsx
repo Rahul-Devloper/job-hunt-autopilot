@@ -43,11 +43,11 @@ export default function SettingsPage() {
     if (user) {
       setUserEmail(user.email ?? '')
 
-      const { data: settings } = await supabase
-        .from('user_settings')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: settings } = await (supabase.from('user_settings') as any)
         .select('gmail_refresh_token')
         .eq('user_id', user.id)
-        .single()
+        .single() as { data: { gmail_refresh_token: string | null } | null }
 
       if (settings?.gmail_refresh_token) {
         setGmailConnected(true)

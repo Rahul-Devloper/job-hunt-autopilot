@@ -29,10 +29,10 @@ export default function JobsPage() {
   async function fetchJobs() {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('jobs')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('jobs') as any)
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }) as { data: Job[] | null; error: unknown }
 
       if (error) throw error
       setJobs(data || [])
@@ -57,7 +57,8 @@ export default function JobsPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from('jobs').delete().eq('id', id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('jobs') as any).delete().eq('id', id) as { error: unknown }
       if (error) throw error
       setJobs(jobs.filter((job) => job.id !== id))
     } catch (error) {

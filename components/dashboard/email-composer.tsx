@@ -43,11 +43,11 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
   useEffect(() => {
     async function fetchLinkedIn() {
       const supabase = createClient()
-      const { data } = await supabase
-        .from('user_settings')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from('user_settings') as any)
         .select('linkedin_url')
         .eq('user_id', 'bb468d21-2326-41bf-9c80-3edffa016aca')
-        .single()
+        .single() as { data: { linkedin_url: string | null } | null }
 
       setLinkedinUrl(data?.linkedin_url ?? null)
       console.log('Fetched LinkedIn URL:', JSON.stringify(data))

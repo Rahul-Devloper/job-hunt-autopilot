@@ -43,12 +43,13 @@ export default function ExtensionPage() {
     } = await supabase.auth.getUser()
 
     if (user) {
-      const { data } = await supabase
-        .from('extension_tokens')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const table = supabase.from('extension_tokens') as any
+      const { data } = await table
         .select('*')
         .eq('user_id', user.id)
         .eq('revoked', false)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }) as { data: ExtensionToken[] | null }
 
       setTokens(data || [])
     }
@@ -97,7 +98,9 @@ export default function ExtensionPage() {
     }
 
     const supabase = createClient()
-    await supabase.from('extension_tokens').update({ revoked: true }).eq('id', tokenId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const table = supabase.from('extension_tokens') as any
+    await table.update({ revoked: true }).eq('id', tokenId)
 
     await loadTokens()
   }
