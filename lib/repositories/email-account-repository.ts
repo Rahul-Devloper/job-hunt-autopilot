@@ -1,4 +1,5 @@
 import { BaseRepository } from './base-repository'
+import { RepositoryError } from '@/lib/errors/app-error'
 
 export interface EmailAccount {
   id: string
@@ -58,5 +59,26 @@ export class EmailAccountRepository extends BaseRepository<EmailAccount> {
       .from(this.tableName)
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', accountId)
+  }
+
+  async findByEmail(userId: string, email: string): Promise<EmailAccount | null> {
+    try {
+      const supabase = await this.getClient()
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('user_id', userId)
+        .eq('email_address', email)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') return null
+        throw new RepositoryError(error.message, error)
+      }
+      return data as EmailAccount
+    } catch (error) {
+      if (error instanceof RepositoryError) throw error
+      throw new RepositoryError('Failed to find email account')
+    }
   }
 }

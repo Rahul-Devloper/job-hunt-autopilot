@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      user_email_accounts: {
+        Row: {
+          id: string
+          user_id: string
+          email_address: string
+          provider_name: string | null
+          smtp_host: string
+          smtp_port: number
+          smtp_secure: boolean
+          smtp_user: string
+          smtp_password_encrypted: string
+          is_verified: boolean
+          is_primary: boolean
+          last_used_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email_address: string
+          provider_name?: string | null
+          smtp_host: string
+          smtp_port: number
+          smtp_secure: boolean
+          smtp_user: string
+          smtp_password_encrypted: string
+          is_verified?: boolean
+          is_primary?: boolean
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email_address?: string
+          provider_name?: string | null
+          smtp_host?: string
+          smtp_port?: number
+          smtp_secure?: boolean
+          smtp_user?: string
+          smtp_password_encrypted?: string
+          is_verified?: boolean
+          is_primary?: boolean
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_emails: {
         Row: {
           company_domain: string

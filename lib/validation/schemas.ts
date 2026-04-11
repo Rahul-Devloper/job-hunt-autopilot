@@ -4,7 +4,7 @@ import { commonSchemas } from './validation-service'
 export const emailAccountSchemas = {
   create: z.object({
     email_address: commonSchemas.email,
-    password: commonSchemas.password,
+    password: z.string().min(1, 'Password is required'),
     smtp_host: z.string().optional(),
     smtp_port: z.number().int().min(1).max(65535).optional(),
     smtp_secure: z.boolean().optional(),

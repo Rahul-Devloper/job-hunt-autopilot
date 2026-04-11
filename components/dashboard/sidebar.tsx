@@ -11,6 +11,7 @@ import {
   LogOut,
   User,
   Chrome,
+  Mail,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Community', href: '/community', icon: Users },
   { name: 'Extension', href: '/extension', icon: Chrome },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Email Accounts', href: '/settings/email-accounts', icon: Mail },
 ]
 
 interface SidebarProps {
