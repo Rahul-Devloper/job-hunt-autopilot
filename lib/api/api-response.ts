@@ -1,4 +1,4 @@
-export interface ApiSuccess<T = any> {
+export interface ApiSuccess<T = unknown> {
   success: true
   data: T
   message?: string
@@ -6,7 +6,7 @@ export interface ApiSuccess<T = any> {
     page?: number
     limit?: number
     total?: number
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 
@@ -15,11 +15,11 @@ export interface ApiError {
   error: {
     message: string
     code: string
-    details?: any
+    details?: unknown
   }
 }
 
-export type ApiResponse<T = any> = ApiSuccess<T> | ApiError
+export type ApiResponse<T = unknown> = ApiSuccess<T> | ApiError
 
 export class ApiResponseBuilder {
   static success<T>(
@@ -51,7 +51,7 @@ export class ApiResponseBuilder {
     message: string,
     code: string = 'UNKNOWN_ERROR',
     status: number = 500,
-    details?: any
+    details?: unknown
   ): Response {
     return Response.json(
       {
@@ -62,7 +62,7 @@ export class ApiResponseBuilder {
     )
   }
 
-  static badRequest(message: string, details?: any): Response {
+  static badRequest(message: string, details?: unknown): Response {
     return this.error(message, 'BAD_REQUEST', 400, details)
   }
 
@@ -82,11 +82,24 @@ export class ApiResponseBuilder {
     return this.error(message, 'INTERNAL_ERROR', 500)
   }
 
-  static fromError(error: any): Response {
+  static fromError(error: unknown): Response {
     console.error('API Error:', error)
 
-    if (error.name && error.code && error.statusCode) {
-      return this.error(error.message, error.code, error.statusCode, error.details)
+    if (
+      error &&
+      typeof error === 'object' &&
+      'name' in error &&
+      'code' in error &&
+      'statusCode' in error &&
+      'message' in error
+    ) {
+      const appError = error as {
+        message: string
+        code: string
+        statusCode: number
+        details?: unknown
+      }
+      return this.error(appError.message, appError.code, appError.statusCode, appError.details)
     }
 
     if (error instanceof Error) {

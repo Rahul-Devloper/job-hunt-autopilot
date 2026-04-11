@@ -3,7 +3,7 @@ export class AppError extends Error {
     message: string,
     public readonly code: string,
     public readonly statusCode: number = 500,
-    public readonly details?: any
+    public readonly details?: unknown
   ) {
     super(message)
     this.name = this.constructor.name
@@ -25,7 +25,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(message, 'VALIDATION_ERROR', 400, details)
   }
 }
@@ -49,7 +49,7 @@ export class NotFoundError extends AppError {
 }
 
 export class RepositoryError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(message, 'DATABASE_ERROR', 500, details)
   }
 }

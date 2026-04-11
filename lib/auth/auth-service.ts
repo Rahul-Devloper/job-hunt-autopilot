@@ -5,7 +5,7 @@ import { validateExtensionToken } from '@/lib/extension-auth'
 export interface AuthResult {
   userId: string
   email?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export type AuthMethod = 'cookie' | 'token' | 'api-key'
