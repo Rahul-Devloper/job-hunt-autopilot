@@ -57,7 +57,8 @@ export async function POST(request: Request) {
       is_verified: false,
     })
 
-    const { smtp_password_encrypted: _omit, ...sanitizedAccount } = account
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { smtp_password_encrypted, ...sanitizedAccount } = account
 
     return ApiResponseBuilder.created(sanitizedAccount, 'Email account added successfully')
   } catch (error) {

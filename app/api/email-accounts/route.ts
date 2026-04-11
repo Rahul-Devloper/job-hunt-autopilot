@@ -9,7 +9,8 @@ export async function GET() {
     const accounts = await emailAccountRepository.findAll(auth.userId)
 
     // Remove sensitive data
-    const sanitized = accounts.map(({ smtp_password_encrypted: _, ...account }) => account)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const sanitized = accounts.map(({ smtp_password_encrypted, ...account }) => account)
 
     return ApiResponseBuilder.success(sanitized, 'Email accounts retrieved', {
       total: sanitized.length,
