@@ -28,6 +28,7 @@ export async function POST(request: Request) {
 
     let userId: string
     let supabase: ReturnType<typeof createServiceClient>
+    console.log('user==> ', user)
 
     if (user) {
       // Authenticated via session (web app)
