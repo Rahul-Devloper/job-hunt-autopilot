@@ -1,15 +1,17 @@
-import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { AuthService } from '@/lib/auth/auth-service'
+import { ApiResponseBuilder } from '@/lib/api/api-response'
+import { ValidationService } from '@/lib/validation/validation-service'
 import { createServiceClient } from '@/lib/supabase/server'
-import { sendViaGmail, sendViaYahoo } from '@/lib/email-service'
+import { sendTrackedEmail } from '@/lib/email-sending-service'
 import { z } from 'zod'
 import crypto from 'crypto'
 
-const SendEmailSchema = z.object({
+const sendEmailSchema = z.object({
   job_id: z.string().uuid(),
   to: z.string().email(),
-  subject: z.string().min(1),
-  body: z.string().min(1),
+  subject: z.string().min(1, 'Subject is required'),
+  body: z.string().min(1, 'Email body is required'),
+  account_id: z.string().uuid().optional(),
 })
 
 function generateTrackingId(): string {
@@ -25,7 +27,8 @@ async function createTrackedLinkedIn(
 ): Promise<string> {
   const trackingId = generateTrackingId()
 
-  const { error } = await supabase.from('link_clicks').insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('link_clicks') as any).insert({
     user_id: userId,
     job_id: jobId,
     email_sent_id: emailSentId,
@@ -44,51 +47,32 @@ async function createTrackedLinkedIn(
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAuth()
+    // 1. Auth
+    const auth = await AuthService.authenticateCookie()
+
+    // 2. Validate
     const body = await request.json()
-    const { job_id, to, subject, body: emailBody } = SendEmailSchema.parse(body)
+    const validated = ValidationService.validate(sendEmailSchema, body)
 
     const supabase = createServiceClient()
-    const userId = user.id
 
-    const { data: settings, error: settingsError } = await supabase
+    // 3. Get user settings (for LinkedIn URL)
+    const { data: settings } = await supabase
       .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
+      .select('linkedin_url')
+      .eq('user_id', auth.userId)
       .single()
 
-    if (settingsError || !settings) {
-      return NextResponse.json({ error: 'User settings not found' }, { status: 400 })
-    }
-
-    const provider = settings.email_provider || 'gmail'
-
-    if (provider === 'yahoo') {
-      if (!settings.yahoo_email || !settings.yahoo_password_encrypted) {
-        return NextResponse.json(
-          { error: 'Yahoo email not configured. Add credentials in Settings.' },
-          { status: 400 }
-        )
-      }
-    } else {
-      if (!settings.gmail_refresh_token) {
-        return NextResponse.json(
-          { error: 'Gmail not connected. Please connect Gmail in Settings.' },
-          { status: 400 }
-        )
-      }
-    }
-
-    // Save email record first (needed for link tracking)
+    // 4. Create email record (for tracking)
     const trackingId = generateTrackingId()
     const { data: emailRecord, error: emailError } = await supabase
       .from('emails_sent')
       .insert({
-        job_id,
-        user_id: userId,
-        to_email: to,
-        subject,
-        body: emailBody,
+        job_id: validated.job_id,
+        user_id: auth.userId,
+        to_email: validated.to,
+        subject: validated.subject,
+        body: validated.body,
         tracking_id: trackingId,
         sent_at: new Date().toISOString(),
       })
@@ -100,66 +84,69 @@ export async function POST(request: Request) {
       throw new Error('Failed to save email record')
     }
 
-    // Build body with tracked LinkedIn signature
-    let fullEmailBody = emailBody
+    // 5. Build email HTML with tracked LinkedIn signature
+    let emailHtml = validated.body.replace(/\n/g, '<br>')
+    const trackedLinks: Record<string, string> = {}
 
-    if (settings.linkedin_url) {
+    if (settings?.linkedin_url) {
       const trackedLinkedIn = await createTrackedLinkedIn(
         supabase,
-        userId,
-        job_id,
+        auth.userId,
+        validated.job_id,
         emailRecord.id,
         settings.linkedin_url
       )
-      fullEmailBody += `\n\n---\nLinkedIn: <a href="${trackedLinkedIn}">${settings.linkedin_url}</a>`
+
+      emailHtml += `\n\n<hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;" />`
+      emailHtml += `<p style="margin: 0;">LinkedIn: <a href="${trackedLinkedIn}">${settings.linkedin_url}</a></p>`
     }
 
-    // Add tracking pixel
+    // 6. Send email using universal SMTP service
     const trackingPixelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${trackingId}`
-    const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" />`
-    const htmlBody = fullEmailBody.replace(/\n/g, '<br>') + trackingPixel
 
-    console.log(`📧 Sending via: ${provider}`)
+    const result = await sendTrackedEmail(
+      auth.userId,
+      {
+        to: validated.to,
+        subject: validated.subject,
+        html: emailHtml,
+        trackingPixelUrl,
+        trackedLinks,
+      },
+      validated.account_id
+    )
 
-    if (provider === 'yahoo') {
-      await sendViaYahoo(settings.yahoo_email!, settings.yahoo_password_encrypted!, to, subject, htmlBody)
-    } else {
-      await sendViaGmail(settings.gmail_refresh_token!, to, subject, htmlBody)
-    }
+    console.log(`✅ Email sent via ${result.account.provider} (${result.account.email})`)
 
-    console.log(`✅ Email sent via ${provider}`)
-
+    // 7. Update job status
     await supabase
       .from('jobs')
       .update({ status: 'email_sent', updated_at: new Date().toISOString() })
-      .eq('id', job_id)
+      .eq('id', validated.job_id)
 
-    // Schedule follow-up reminder in 2 days
+    // 8. Schedule follow-up reminder in 2 days
     const followUpDate = new Date()
     followUpDate.setDate(followUpDate.getDate() + 2)
 
-    await supabase.from('followup_reminders').insert({
-      job_id,
-      user_id: userId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('followup_reminders') as any).insert({
+      job_id: validated.job_id,
+      user_id: auth.userId,
       email_sent_id: emailRecord.id,
       followup_number: 1,
       scheduled_for: followUpDate.toISOString(),
     })
 
-    return NextResponse.json({
-      success: true,
-      message: `Email sent successfully via ${provider}!`,
-      tracking_id: trackingId,
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation failed', details: error.issues }, { status: 400 })
-    }
-
-    console.error('Send email error:', error)
-    return NextResponse.json(
-      { error: 'Failed to send email', details: (error as Error).message },
-      { status: 500 }
+    // 9. Return success
+    return ApiResponseBuilder.success(
+      {
+        tracking_id: trackingId,
+        sent_from: result.account.email,
+        provider: result.account.provider,
+      },
+      `Email sent successfully via ${result.account.provider}!`
     )
+  } catch (error) {
+    return ApiResponseBuilder.fromError(error)
   }
 }

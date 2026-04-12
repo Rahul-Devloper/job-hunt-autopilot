@@ -9,11 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { createClient } from '@/lib/supabase/client'
 import type { Job } from '@/types'
 
 interface EmailComposerProps {
@@ -21,6 +27,14 @@ interface EmailComposerProps {
   onClose: () => void
   job: Job
   onSuccess: () => void
+}
+
+interface EmailAccount {
+  id: string
+  email_address: string
+  provider_name: string | null
+  is_primary: boolean
+  is_verified: boolean
 }
 
 const DEFAULT_TEMPLATE = `Hi {hr_name},
@@ -38,36 +52,48 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
   const [subject, setSubject] = useState(`Your Next ${job.job_title}`)
   const [body, setBody] = useState(DEFAULT_TEMPLATE)
   const [sending, setSending] = useState(false)
-  const [linkedinUrl, setLinkedinUrl] = useState<string | null>(null)
+  const [accounts, setAccounts] = useState<EmailAccount[]>([])
+  const [selectedAccount, setSelectedAccount] = useState<string>('')
 
   useEffect(() => {
-    async function fetchLinkedIn() {
-      const supabase = createClient()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase.from('user_settings') as any)
-        .select('linkedin_url')
-        .eq('user_id', 'bb468d21-2326-41bf-9c80-3edffa016aca')
-        .single() as { data: { linkedin_url: string | null } | null }
-
-      setLinkedinUrl(data?.linkedin_url ?? null)
-      console.log('Fetched LinkedIn URL:', JSON.stringify(data))
-    }
-
     if (open) {
-      fetchLinkedIn()
+      loadEmailAccounts()
     }
   }, [open])
+
+  async function loadEmailAccounts() {
+    try {
+      const response = await fetch('/api/email-accounts')
+      const data = await response.json()
+
+      if (data.success) {
+        const list: EmailAccount[] = data.data || []
+        setAccounts(list)
+
+        // Auto-select primary account
+        const primary = list.find((a) => a.is_primary)
+        if (primary) {
+          setSelectedAccount(primary.id)
+        } else if (list.length > 0) {
+          setSelectedAccount(list[0].id)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load email accounts:', error)
+    }
+  }
 
   const previewBody = body
     .replace(/{company}/g, job.company_name)
     .replace(/{role}/g, job.job_title)
     .replace(/{hr_name}/g, job.hr_name || `${job.company_name} hiring team`)
 
-  const signaturePreview = linkedinUrl
-    ? `\n\n---\nLet's connect on LinkedIn: ${linkedinUrl}`
-    : '\n\n---\n⚠️ No LinkedIn URL set (add in user_settings table)'
-
   async function handleSend() {
+    if (!selectedAccount) {
+      alert('Please select an email account to send from.')
+      return
+    }
+
     setSending(true)
     try {
       const response = await fetch('/api/emails/send', {
@@ -78,16 +104,17 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
           to: job.hr_email,
           subject,
           body: previewBody,
+          account_id: selectedAccount,
         }),
       })
 
       const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send email')
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || 'Failed to send email')
       }
 
-      alert('Email sent successfully!')
+      alert(`Email sent successfully via ${data.data.provider}!`)
       onSuccess()
       onClose()
     } catch (error: unknown) {
@@ -112,6 +139,32 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
         </DialogHeader>
 
         <div className='min-h-0 flex-1 overflow-y-auto space-y-4 pr-1'>
+          <div>
+            <Label>Send from</Label>
+            <Select value={selectedAccount} onValueChange={(v) => setSelectedAccount(v ?? '')}>
+              <SelectTrigger>
+                <SelectValue placeholder='Select email account' />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.email_address}
+                    {account.is_primary ? ' (Primary)' : ''}
+                    {!account.is_verified ? ' ⚠️ Not verified' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {accounts.length === 0 && (
+              <p className='text-sm text-amber-600 mt-1'>
+                No email accounts configured.{' '}
+                <a href='/dashboard/settings/email-accounts' className='underline'>
+                  Add one
+                </a>
+              </p>
+            )}
+          </div>
+
           <div>
             <Label htmlFor='subject'>Subject</Label>
             <Input
@@ -139,13 +192,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
             <p className='mb-2 text-sm font-medium text-gray-700'>Preview:</p>
             <div className='whitespace-pre-wrap text-sm text-gray-900'>
               {previewBody}
-              <span className='text-blue-600'>{signaturePreview}</span>
             </div>
-            {linkedinUrl && (
-              <p className='mt-2 text-xs text-gray-500'>
-                LinkedIn link will be tracked when sent
-              </p>
-            )}
           </div>
         </div>
 
@@ -153,7 +200,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
           <Button variant='outline' onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSend} disabled={sending}>
+          <Button onClick={handleSend} disabled={sending || !selectedAccount}>
             {sending ? 'Sending...' : 'Send Email'}
           </Button>
         </DialogFooter>

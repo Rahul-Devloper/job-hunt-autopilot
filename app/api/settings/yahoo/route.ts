@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/server'
-import { encrypt } from '@/lib/email-service'
+import { EncryptionService } from '@/lib/security/encryption-service'
 import { z } from 'zod'
 
 const YahooSchema = z.object({
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       .from('user_settings')
       .update({
         yahoo_email,
-        yahoo_password_encrypted: encrypt(yahoo_password),
+        yahoo_password_encrypted: EncryptionService.encrypt(yahoo_password),
         email_provider: 'yahoo',
         updated_at: new Date().toISOString(),
       })
