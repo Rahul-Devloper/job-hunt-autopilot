@@ -12,6 +12,7 @@ import {
   User,
   Chrome,
   Mail,
+  FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Extension', href: '/extension', icon: Chrome },
   { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Email Accounts', href: '/settings/email-accounts', icon: Mail },
+  { name: 'Documents', href: '/settings/documents', icon: FileText },
 ]
 
 interface SidebarProps {

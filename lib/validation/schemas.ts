@@ -57,3 +57,15 @@ export const emailSchemas = {
     account_id: commonSchemas.uuid.optional(),
   }),
 }
+
+export const documentSchemas = {
+  upload: z.object({
+    document_type: z.enum(['cv', 'cover_letter']),
+    display_name: z.string().optional(),
+  }),
+
+  setMaster: z.object({
+    document_id: commonSchemas.uuid,
+    document_type: z.enum(['cv', 'cover_letter']),
+  }),
+}

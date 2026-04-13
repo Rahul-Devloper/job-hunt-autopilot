@@ -385,6 +385,45 @@ export type Database = {
           },
         ]
       }
+      user_documents: {
+        Row: {
+          id: string
+          user_id: string
+          document_type: 'cv' | 'cover_letter'
+          file_name: string
+          file_path: string
+          file_size: number
+          is_master: boolean
+          display_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          document_type: 'cv' | 'cover_letter'
+          file_name: string
+          file_path: string
+          file_size: number
+          is_master?: boolean
+          display_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          document_type?: 'cv' | 'cover_letter'
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          is_master?: boolean
+          display_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           apollo_api_key: string | null

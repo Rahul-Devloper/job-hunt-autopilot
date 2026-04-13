@@ -1,7 +1,8 @@
 import nodemailer from 'nodemailer'
 import { EncryptionService } from '@/lib/security/encryption-service'
-import { emailAccountRepository, type EmailAccount } from '@/lib/repositories'
+import { emailAccountRepository, documentRepository, type EmailAccount } from '@/lib/repositories'
 import { ExternalServiceError } from '@/lib/errors/app-error'
+import { createClient } from '@/lib/supabase/server'
 
 export interface EmailOptions {
   to: string | string[]
@@ -20,6 +21,44 @@ export interface SendEmailResult {
   account: {
     email: string
     provider: string
+  }
+}
+
+async function getMasterDocumentAttachments(
+  userId: string
+): Promise<Array<{ filename: string; content: Buffer }>> {
+  try {
+    const supabase = await createClient()
+    const attachments: Array<{ filename: string; content: Buffer }> = []
+
+    const masterCV = await documentRepository.findMaster(userId, 'cv')
+    if (masterCV) {
+      const { data } = await supabase.storage
+        .from('user-documents')
+        .download(masterCV.file_path)
+
+      if (data) {
+        const buffer = Buffer.from(await data.arrayBuffer())
+        attachments.push({ filename: masterCV.file_name, content: buffer })
+      }
+    }
+
+    const masterCoverLetter = await documentRepository.findMaster(userId, 'cover_letter')
+    if (masterCoverLetter) {
+      const { data } = await supabase.storage
+        .from('user-documents')
+        .download(masterCoverLetter.file_path)
+
+      if (data) {
+        const buffer = Buffer.from(await data.arrayBuffer())
+        attachments.push({ filename: masterCoverLetter.file_name, content: buffer })
+      }
+    }
+
+    return attachments
+  } catch (error) {
+    console.error('Error fetching document attachments:', error)
+    return []
   }
 }
 
@@ -66,6 +105,11 @@ export async function sendEmail(
     },
   })
 
+  const attachments =
+    options.attachments && options.attachments.length > 0
+      ? options.attachments
+      : await getMasterDocumentAttachments(userId)
+
   let result: { messageId?: string }
   try {
     result = await transporter.sendMail({
@@ -73,7 +117,7 @@ export async function sendEmail(
       to: options.to,
       subject: options.subject,
       html: options.html,
-      attachments: options.attachments,
+      attachments,
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
