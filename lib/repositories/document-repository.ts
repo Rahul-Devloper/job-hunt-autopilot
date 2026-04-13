@@ -26,8 +26,8 @@ export class DocumentRepository extends BaseRepository<UserDocument> {
     try {
       const supabase = await this.getClient()
 
-      const { data, error } = await (supabase
-        .from(this.tableName) as any)
+      const { data, error } = await supabase
+        .from(this.tableName)
         .select('*')
         .eq('user_id', userId)
         .eq('document_type', documentType)
@@ -53,8 +53,8 @@ export class DocumentRepository extends BaseRepository<UserDocument> {
     try {
       const supabase = await this.getClient()
 
-      const { data, error } = await (supabase
-        .from(this.tableName) as any)
+      const { data, error } = await supabase
+        .from(this.tableName)
         .select('*')
         .eq('user_id', userId)
         .eq('document_type', documentType)
@@ -80,14 +80,14 @@ export class DocumentRepository extends BaseRepository<UserDocument> {
     try {
       const supabase = await this.getClient()
 
-      await (supabase
-        .from(this.tableName) as any)
+      await supabase
+        .from(this.tableName)
         .update({ is_master: false })
         .eq('user_id', userId)
         .eq('document_type', documentType)
 
-      const { error } = await (supabase
-        .from(this.tableName) as any)
+      const { error } = await supabase
+        .from(this.tableName)
         .update({ is_master: true })
         .eq('id', documentId)
         .eq('user_id', userId)
