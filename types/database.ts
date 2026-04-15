@@ -9,6 +9,74 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      job_contacts: {
+        Row: {
+          id: string
+          job_id: string
+          user_id: string
+          email: string
+          contact_name: string | null
+          contact_role: string | null
+          contact_source: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+          notes: string | null
+          is_primary: boolean
+          emails_sent: number
+          emails_opened: number
+          emails_clicked: number
+          emails_replied: number
+          last_contacted_at: string | null
+          first_response_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          user_id: string
+          email: string
+          contact_name?: string | null
+          contact_role?: string | null
+          contact_source?: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+          notes?: string | null
+          is_primary?: boolean
+          emails_sent?: number
+          emails_opened?: number
+          emails_clicked?: number
+          emails_replied?: number
+          last_contacted_at?: string | null
+          first_response_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          user_id?: string
+          email?: string
+          contact_name?: string | null
+          contact_role?: string | null
+          contact_source?: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+          notes?: string | null
+          is_primary?: boolean
+          emails_sent?: number
+          emails_opened?: number
+          emails_clicked?: number
+          emails_replied?: number
+          last_contacted_at?: string | null
+          first_response_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_contacts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_email_accounts: {
         Row: {
           id: string

@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Mail, Trash2, Loader2 } from 'lucide-react'
+import { ExternalLink, Mail, Trash2, Loader2, Edit2, X } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
@@ -13,6 +13,8 @@ interface ListViewProps {
   onDelete?: (id: string) => void
   onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
+  onManualEmail?: (id: string, existingEmail?: string) => void
+  onRemoveEmail?: (id: string) => void
   findingEmail?: string | null
 }
 
@@ -34,7 +36,7 @@ const statusLabels: Record<string, string> = {
   rejected: 'Rejected',
 }
 
-export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, findingEmail }: ListViewProps) {
+export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, onManualEmail, onRemoveEmail, findingEmail }: ListViewProps) {
   return (
     <div className="p-8">
       <div className="overflow-hidden rounded-lg border bg-white">
@@ -88,21 +90,52 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, findingEmai
                 </td>
                 <td className="px-6 py-4">
                   {job.hr_email ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm text-gray-900">{job.hr_email}</span>
+                      {job.email_source === 'manual' && (
+                        <Badge variant="outline" className="gap-1 text-blue-600 border-blue-300 text-xs">
+                          Manual
+                        </Badge>
+                      )}
                       {job.email_type === 'personal' && (
                         <Badge className="gap-1 bg-green-100 text-green-800 border-green-200 hover:bg-green-100 text-xs">
                           ★ Personal
                         </Badge>
                       )}
-                      {job.email_type === 'generic' && (
+                      {job.email_type === 'generic' && job.email_source !== 'manual' && (
                         <Badge variant="outline" className="gap-1 text-gray-500 text-xs">
                           Generic
                         </Badge>
                       )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        title="Edit email"
+                        onClick={() => onManualEmail?.(job.id, job.hr_email ?? undefined)}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        title="Remove email"
+                        onClick={() => onRemoveEmail?.(job.id)}
+                      >
+                        <X className="h-3 w-3 text-red-500" />
+                      </Button>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500">—</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      onClick={() => onManualEmail?.(job.id)}
+                    >
+                      <Mail className="mr-1 h-3 w-3" />
+                      Add Email
+                    </Button>
                   )}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
@@ -128,7 +161,7 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, findingEmai
                         )}
                       </Button>
                     )}
-                    {job.hr_email && job.status === 'email_found' && (
+                    {job.hr_email && (
                       <Button
                         size="sm"
                         className="h-7 w-7 p-0"

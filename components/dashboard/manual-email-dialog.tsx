@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,8 @@ interface ManualEmailDialogProps {
   jobId: string
   companyName: string
   onSuccess: () => void
+  existingEmail?: string
+  existingName?: string
 }
 
 export function ManualEmailDialog({
@@ -35,12 +37,22 @@ export function ManualEmailDialog({
   jobId,
   companyName,
   onSuccess,
+  existingEmail,
+  existingName,
 }: ManualEmailDialogProps) {
-  const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
+  const [email, setEmail] = useState(existingEmail || '')
+  const [name, setName] = useState(existingName || '')
   const [emailType, setEmailType] = useState<'personal' | 'generic'>('generic')
   const [contribute, setContribute] = useState(true)
   const [loading, setLoading] = useState(false)
+
+  // Sync fields when dialog opens (handles switching between add and edit)
+  useEffect(() => {
+    if (open) {
+      setEmail(existingEmail || '')
+      setName(existingName || '')
+    }
+  }, [open, existingEmail, existingName])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

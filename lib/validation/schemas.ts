@@ -69,3 +69,29 @@ export const documentSchemas = {
     document_type: z.enum(['cv', 'cover_letter']),
   }),
 }
+
+export const jobContactSchemas = {
+  create: z.object({
+    job_id: commonSchemas.uuid,
+    email: commonSchemas.email,
+    contact_name: z.string().optional(),
+    contact_role: z.string().optional(),
+    contact_source: z
+      .enum(['linkedin', 'manual', 'company_website', 'referral', 'auto'])
+      .optional(),
+    notes: z.string().optional(),
+    is_primary: z.boolean().optional(),
+  }),
+
+  update: z.object({
+    email: commonSchemas.email.optional(),
+    contact_name: z.string().optional(),
+    contact_role: z.string().optional(),
+    notes: z.string().optional(),
+  }),
+
+  setPrimary: z.object({
+    contact_id: commonSchemas.uuid,
+    job_id: commonSchemas.uuid,
+  }),
+}

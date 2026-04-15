@@ -19,6 +19,7 @@ export default function JobsPage() {
     open: boolean
     jobId: string
     companyName: string
+    existingEmail?: string
   } | null>(null)
   const [emailComposer, setEmailComposer] = useState<Job | null>(null)
 
@@ -113,13 +114,31 @@ export default function JobsPage() {
     }
   }
 
+  function handleManualEmail(jobId: string, existingEmail?: string) {
+    const job = jobs.find((j) => j.id === jobId)
+    if (!job) return
+    setManualEmailDialog({
+      open: true,
+      jobId,
+      companyName: job.company_name,
+      existingEmail,
+    })
+  }
+
+  async function handleRemoveEmail(jobId: string) {
+    if (!confirm('Remove this email address from the job?')) return
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/email`, { method: 'DELETE' })
+      const data = await response.json()
+      if (data.success) await fetchJobs()
+    } catch (error) {
+      console.error('Failed to remove email:', error)
+    }
+  }
+
   function handleSendEmail(id: string) {
     const job = jobs.find((j) => j.id === id)
     if (!job) return
-    if (!job.hr_email) {
-      alert('No email found for this job. Find an email first.')
-      return
-    }
     setEmailComposer(job)
   }
 
@@ -176,6 +195,8 @@ export default function JobsPage() {
                 onDelete={handleDelete}
                 onFindEmail={handleFindEmail}
                 onSendEmail={handleSendEmail}
+                onManualEmail={handleManualEmail}
+                onRemoveEmail={handleRemoveEmail}
                 findingEmail={findingEmail}
               />
             )}
@@ -187,6 +208,8 @@ export default function JobsPage() {
               onDelete={handleDelete}
               onFindEmail={handleFindEmail}
               onSendEmail={handleSendEmail}
+              onManualEmail={handleManualEmail}
+              onRemoveEmail={handleRemoveEmail}
               findingEmail={findingEmail}
             />
           </TabsContent>
@@ -199,6 +222,7 @@ export default function JobsPage() {
           onClose={() => setManualEmailDialog(null)}
           jobId={manualEmailDialog.jobId}
           companyName={manualEmailDialog.companyName}
+          existingEmail={manualEmailDialog.existingEmail}
           onSuccess={fetchJobs}
         />
       )}
