@@ -48,6 +48,39 @@ export const extensionTokenSchemas = {
   }),
 }
 
+/**
+ * Parses a comma-separated email string into a validated string[].
+ * Accepts both "a@x.com" and "a@x.com, b@x.com, c@x.com".
+ */
+const emailOrEmailList = z
+  .string()
+  .min(1, 'At least one recipient email is required')
+  .transform((str) =>
+    str
+      .split(',')
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0)
+  )
+  .refine((emails) => emails.length > 0, {
+    message: 'At least one valid email is required',
+  })
+  .refine(
+    (emails) => {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      return emails.every((e) => re.test(e))
+    },
+    { message: 'All emails must be valid email addresses' }
+  )
+
+export const sendEmailSchema = z.object({
+  job_id: commonSchemas.uuid,
+  to: emailOrEmailList,
+  subject: commonSchemas.nonEmptyString,
+  body: commonSchemas.nonEmptyString,
+  account_id: commonSchemas.uuid.optional(),
+  contact_id: commonSchemas.uuid.optional(),
+})
+
 export const emailSchemas = {
   send: z.object({
     job_id: commonSchemas.uuid,

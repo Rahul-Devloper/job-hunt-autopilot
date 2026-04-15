@@ -3,16 +3,8 @@ import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ValidationService } from '@/lib/validation/validation-service'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendTrackedEmail } from '@/lib/email-sending-service'
-import { z } from 'zod'
+import { sendEmailSchema } from '@/lib/validation/schemas'
 import crypto from 'crypto'
-
-const sendEmailSchema = z.object({
-  job_id: z.string().uuid(),
-  to: z.string().email(),
-  subject: z.string().min(1, 'Subject is required'),
-  body: z.string().min(1, 'Email body is required'),
-  account_id: z.string().uuid().optional(),
-})
 
 function generateTrackingId(): string {
   return crypto.randomBytes(16).toString('hex')
@@ -50,7 +42,7 @@ export async function POST(request: Request) {
     // 1. Auth
     const auth = await AuthService.authenticateCookie()
 
-    // 2. Validate
+    // 2. Validate — validated.to is string[] after the schema transform
     const body = await request.json()
     const validated = ValidationService.validate(sendEmailSchema, body)
 
@@ -64,13 +56,14 @@ export async function POST(request: Request) {
       .single()
 
     // 4. Create email record (for tracking)
+    // Store multiple recipients as comma-joined string in the TEXT column
     const trackingId = generateTrackingId()
     const { data: emailRecord, error: emailError } = await supabase
       .from('emails_sent')
       .insert({
         job_id: validated.job_id,
         user_id: auth.userId,
-        to_email: validated.to,
+        to_email: validated.to.join(', '),
         subject: validated.subject,
         body: validated.body,
         tracking_id: trackingId,
@@ -101,7 +94,7 @@ export async function POST(request: Request) {
       emailHtml += `<p style="margin: 0;">LinkedIn: <a href="${trackedLinkedIn}">${settings.linkedin_url}</a></p>`
     }
 
-    // 6. Send email using universal SMTP service
+    // 6. Send email — nodemailer accepts string[] natively
     const trackingPixelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/track/${trackingId}`
 
     const result = await sendTrackedEmail(
@@ -116,7 +109,8 @@ export async function POST(request: Request) {
       validated.account_id
     )
 
-    console.log(`✅ Email sent via ${result.account.provider} (${result.account.email})`)
+    const recipientCount = validated.to.length
+    console.log(`✅ Email sent via ${result.account.provider} to ${recipientCount} recipient(s): ${validated.to.join(', ')}`)
 
     // 7. Update job status
     await supabase
@@ -143,8 +137,10 @@ export async function POST(request: Request) {
         tracking_id: trackingId,
         sent_from: result.account.email,
         provider: result.account.provider,
+        recipient_count: recipientCount,
+        recipients: validated.to,
       },
-      `Email sent successfully via ${result.account.provider}!`
+      `Email sent to ${recipientCount} recipient${recipientCount > 1 ? 's' : ''}!`
     )
   } catch (error) {
     return ApiResponseBuilder.fromError(error)
