@@ -26,6 +26,7 @@ interface JobCardProps {
   onManualEmail?: (id: string, existingEmail?: string) => void
   onRemoveEmail?: (id: string) => void
   findingEmail?: string | null
+  onContactsFound?: (jobId: string) => void
 }
 
 const statusColors: Record<string, string> = {
@@ -54,8 +55,28 @@ export function JobCard({
   onManualEmail,
   onRemoveEmail,
   findingEmail,
+  onContactsFound,
 }: JobCardProps) {
   const [contactsOpen, setContactsOpen] = useState(false)
+  const [findingContacts, setFindingContacts] = useState(false)
+
+  async function handleFindContacts() {
+    setFindingContacts(true)
+    try {
+      const response = await fetch(`/api/jobs/${job.id}/find-contacts`, { method: 'POST' })
+      const data = await response.json()
+      if (data.success) {
+        onContactsFound?.(job.id)
+        setContactsOpen(true)
+      } else {
+        alert(data.error?.message || 'Failed to find contacts. Make sure API keys are configured in Settings.')
+      }
+    } catch {
+      alert('Error finding contacts')
+    } finally {
+      setFindingContacts(false)
+    }
+  }
 
   return (
     <>
@@ -149,6 +170,25 @@ export function JobCard({
               >
                 <Users className="mr-1 h-3 w-3" />
                 Contacts
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-7"
+                onClick={handleFindContacts}
+                disabled={findingContacts}
+              >
+                {findingContacts ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Finding...
+                  </>
+                ) : (
+                  <>
+                    <Users className="mr-1 h-3 w-3" />
+                    Find Contacts
+                  </>
+                )}
               </Button>
               <a
                 href={job.job_url}

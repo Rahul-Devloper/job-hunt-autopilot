@@ -9,6 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      user_api_keys: {
+        Row: {
+          id: string
+          user_id: string
+          apollo_api_key: string | null
+          hunter_api_key: string | null
+          apollo_credits_remaining: number
+          hunter_credits_remaining: number
+          email_finder_keys: Json | null
+          last_checked_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          apollo_api_key?: string | null
+          hunter_api_key?: string | null
+          apollo_credits_remaining?: number
+          hunter_credits_remaining?: number
+          email_finder_keys?: Json | null
+          last_checked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          apollo_api_key?: string | null
+          hunter_api_key?: string | null
+          apollo_credits_remaining?: number
+          hunter_credits_remaining?: number
+          email_finder_keys?: Json | null
+          last_checked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contact_discovery_logs: {
+        Row: {
+          id: string
+          user_id: string
+          job_id: string
+          method: 'apollo' | 'hunter' | 'manual' | 'combined' | null
+          contacts_found: number
+          api_calls_made: number
+          credits_used: number
+          success: boolean
+          error_message: string | null
+          providers: string[] | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          job_id: string
+          method?: 'apollo' | 'hunter' | 'manual' | 'combined' | null
+          contacts_found?: number
+          api_calls_made?: number
+          credits_used?: number
+          success?: boolean
+          error_message?: string | null
+          providers?: string[] | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          job_id?: string
+          method?: 'apollo' | 'hunter' | 'manual' | 'combined' | null
+          contacts_found?: number
+          api_calls_made?: number
+          credits_used?: number
+          success?: boolean
+          error_message?: string | null
+          providers?: string[] | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       job_contacts: {
         Row: {
           id: string

@@ -7,7 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Check, Mail, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { EmailFinderCard } from '@/components/settings/email-finder-card'
+import { EMAIL_FINDER_PROVIDERS, TOTAL_FREE_CREDITS } from '@/lib/email-finders/providers'
+import { Check, Mail, AlertCircle, Info } from 'lucide-react'
+import type { EmailFinderStatus } from '@/types/email-finders'
 
 export default function SettingsPage() {
   const [gmailConnected, setGmailConnected] = useState(false)
@@ -17,17 +21,18 @@ export default function SettingsPage() {
   const [yahooSaved, setYahooSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [finderStatuses, setFinderStatuses] = useState<Record<string, EmailFinderStatus>>({})
 
   useEffect(() => {
     checkStatus()
+    loadFinderStatuses()
 
-    // Listen for Gmail OAuth popup to signal success
     function handleMessage(e: MessageEvent) {
       if (e.data?.type === 'gmail_oauth') {
         if (e.data.params === 'gmail=connected') {
           setGmailConnected(true)
         } else {
-          alert(`Gmail connection failed. Please try again.`)
+          alert('Gmail connection failed. Please try again.')
         }
       }
     }
@@ -38,7 +43,9 @@ export default function SettingsPage() {
 
   async function checkStatus() {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     if (user) {
       setUserEmail(user.email ?? '')
@@ -57,17 +64,40 @@ export default function SettingsPage() {
     setLoading(false)
   }
 
+  async function loadFinderStatuses() {
+    try {
+      const response = await fetch('/api/settings/email-finders')
+      const data = await response.json()
+      if (data.success) {
+        setFinderStatuses(data.data)
+      }
+    } catch {}
+  }
+
+  async function handleSaveProvider(providerId: string, apiKey: string) {
+    const response = await fetch('/api/settings/email-finders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: providerId, api_key: apiKey }),
+    })
+    const data = await response.json()
+    if (!data.success) throw new Error(data.error?.message || 'Failed to save')
+    await loadFinderStatuses()
+  }
+
+  async function handleRemoveProvider(providerId: string) {
+    const response = await fetch(`/api/settings/email-finders/${providerId}`, { method: 'DELETE' })
+    const data = await response.json()
+    if (!data.success) throw new Error(data.error?.message || 'Failed to remove')
+    await loadFinderStatuses()
+  }
+
   function handleConnectGmail() {
     const width = 500
     const height = 600
     const left = window.screen.width / 2 - width / 2
     const top = window.screen.height / 2 - height / 2
-
-    window.open(
-      '/api/auth/gmail',
-      'Gmail OAuth',
-      `width=${width},height=${height},left=${left},top=${top}`
-    )
+    window.open('/api/auth/gmail', 'Gmail OAuth', `width=${width},height=${height},left=${left},top=${top}`)
   }
 
   async function handleSaveYahoo() {
@@ -75,7 +105,6 @@ export default function SettingsPage() {
       alert('Please enter both email and app password')
       return
     }
-
     setSaving(true)
     try {
       const response = await fetch('/api/settings/yahoo', {
@@ -83,10 +112,8 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ yahoo_email: yahooEmail, yahoo_password: yahooPassword }),
       })
-
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Failed to save')
-
       setYahooSaved(true)
       setYahooPassword('')
     } catch (error) {
@@ -95,6 +122,8 @@ export default function SettingsPage() {
       setSaving(false)
     }
   }
+
+  const connectedCount = EMAIL_FINDER_PROVIDERS.filter((p) => finderStatuses[p.id]?.connected).length
 
   if (loading) {
     return (
@@ -212,19 +241,45 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Email Finding */}
+          {/* Email Finder Marketplace */}
           <Card>
             <CardHeader>
-              <CardTitle>Email Finding (Optional)</CardTitle>
+              <CardTitle>Email Finder Integrations</CardTitle>
               <CardDescription>
-                Add Hunter.io or Apollo.io API keys for personal email finding
+                Connect email finder services to automatically discover hiring contacts.
+                Keys are encrypted before storage.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-500">
-                Coming in a future update! For now we use the free community database and pattern
-                guessing.
-              </p>
+            <CardContent className="space-y-4">
+              {/* Summary */}
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 text-sm">
+                  <strong>Up to {TOTAL_FREE_CREDITS} free searches/month</strong> when all 3 providers are connected.
+                  {connectedCount > 0 && (
+                    <span className="ml-1 text-blue-700">
+                      ({connectedCount} of {EMAIL_FINDER_PROVIDERS.length} connected)
+                    </span>
+                  )}
+                  <br />
+                  <span className="text-xs">
+                    The app tries Snov.io → GetProspect → Hunter.io until 4 contacts are found.
+                  </span>
+                </AlertDescription>
+              </Alert>
+
+              {/* Provider cards */}
+              <div className="space-y-3">
+                {EMAIL_FINDER_PROVIDERS.map((provider) => (
+                  <EmailFinderCard
+                    key={provider.id}
+                    provider={provider}
+                    status={finderStatuses[provider.id] ?? null}
+                    onSave={handleSaveProvider}
+                    onRemove={handleRemoveProvider}
+                  />
+                ))}
+              </div>
             </CardContent>
           </Card>
 

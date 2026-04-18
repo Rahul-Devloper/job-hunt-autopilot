@@ -1,4 +1,5 @@
 export { BaseRepository } from './base-repository'
+export { EmailFinderRepository } from './email-finder-repository'
 export { JobRepository } from './job-repository'
 export { EmailAccountRepository } from './email-account-repository'
 export type { EmailAccount } from './email-account-repository'
