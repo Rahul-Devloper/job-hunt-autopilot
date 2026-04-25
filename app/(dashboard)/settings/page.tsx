@@ -74,11 +74,11 @@ export default function SettingsPage() {
     } catch {}
   }
 
-  async function handleSaveProvider(providerId: string, apiKey: string) {
+  async function handleSaveProvider(providerId: string, credentials: Record<string, string>) {
     const response = await fetch('/api/settings/email-finders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: providerId, api_key: apiKey }),
+      body: JSON.stringify({ provider: providerId, ...credentials }),
     })
     const data = await response.json()
     if (!data.success) throw new Error(data.error?.message || 'Failed to save')

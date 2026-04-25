@@ -2,7 +2,7 @@ import type { EmailFinderProviderInfo } from '@/types/email-finders'
 
 /**
  * All supported email finder providers.
- * Add new providers here — no database changes needed!
+ * Add new providers here — no database changes needed.
  */
 export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [
   {
@@ -12,7 +12,11 @@ export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [
     signupUrl: 'https://snov.io/sign-up',
     docsUrl: 'https://snov.io/api',
     description: 'Best free tier — 50 credits/month',
-    apiKeyLabel: 'Snov.io API Key',
+    authType: 'oauth',
+    credentialLabels: {
+      client_id: 'Client ID',
+      client_secret: 'Client Secret',
+    },
   },
   {
     id: 'getprospect',
@@ -21,7 +25,10 @@ export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [
     signupUrl: 'https://getprospect.com/sign-up',
     docsUrl: 'https://app.getprospect.com/api',
     description: 'LinkedIn enrichment — 50 searches/month',
-    apiKeyLabel: 'GetProspect API Key',
+    authType: 'api_key',
+    credentialLabels: {
+      api_key: 'API Key',
+    },
   },
   {
     id: 'hunter',
@@ -30,7 +37,10 @@ export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [
     signupUrl: 'https://hunter.io/users/sign_up',
     docsUrl: 'https://hunter.io/api-documentation',
     description: 'Reliable domain search — 25 searches/month',
-    apiKeyLabel: 'Hunter.io API Key',
+    authType: 'api_key',
+    credentialLabels: {
+      api_key: 'API Key',
+    },
   },
 ]
 
@@ -42,9 +52,6 @@ export const TOTAL_FREE_CREDITS = EMAIL_FINDER_PROVIDERS.reduce(
   0
 )
 
-/**
- * Lookup provider info by ID
- */
 export function getProviderInfo(id: string): EmailFinderProviderInfo | undefined {
   return EMAIL_FINDER_PROVIDERS.find((p) => p.id === id)
 }
