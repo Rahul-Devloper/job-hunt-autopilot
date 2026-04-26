@@ -2,10 +2,6 @@ import { BaseEmailFinderAdapter } from './base-adapter'
 import type { Contact } from '@/lib/services/contact-discovery-service'
 import type { AuthResult } from '@/types/email-finders'
 
-/**
- * GetProspect adapter — simple API key, no token refresh needed.
- * Charges 1 credit per domain search.
- */
 export class GetProspectAdapter extends BaseEmailFinderAdapter {
   readonly id = 'getprospect'
   readonly name = 'GetProspect'
@@ -15,39 +11,66 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
   }
 
   async searchByDomain(domain: string, apiKey: string): Promise<Contact[]> {
-    const response = await fetch(
-      `https://api.getprospect.com/public/v1/domain-search?domain=${encodeURIComponent(domain)}&limit=50`,
-      { headers: { 'X-Api-Key': apiKey } }
-    )
+    try {
+      console.log('[GetProspect] Starting search for:', domain)
 
-    if (!response.ok) {
-      throw new Error(`GetProspect search failed: ${response.status} ${await response.text()}`)
+      const response = await fetch(
+        `https://api.getprospect.com/public/v1/domain-search?domain=${encodeURIComponent(domain)}&limit=100`,
+        {
+          headers: {
+            'X-Api-Key': apiKey,
+          },
+        },
+      )
+
+      // Check if body already consumed
+      if (response.bodyUsed) {
+        console.error('[GetProspect] Body already used!')
+        throw new Error('Response body already consumed')
+      }
+
+      let data: any
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        console.error('[GetProspect] Failed to parse JSON:', parseError)
+        throw new Error(`Failed to parse GetProspect response: ${parseError}`)
+      }
+
+      console.log('[GetProspect] Response parsed successfully')
+
+      if (!response.ok) {
+        const errorMsg = data.message || 'Unknown error'
+        console.error('[GetProspect] API error:', errorMsg)
+        throw new Error(
+          `GetProspect API error: ${response.status} - ${errorMsg}`,
+        )
+      }
+
+      const emails = data.emails || []
+      console.log('[GetProspect] Processing', emails.length, 'emails')
+
+      const contacts = emails
+        .filter((e: any) => e.email && this.isRelevantRole(e.position || ''))
+        .map((e: any) => ({
+          name:
+            `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown',
+          email: e.email,
+          title: e.position || 'Unknown',
+          source: 'getprospect' as const,
+          confidence:
+            (e.confidence || 0) > 80 ? ('high' as const) : ('medium' as const),
+          linkedin_url: e.linkedin_url,
+        }))
+
+      console.log('[GetProspect] Filtered to', contacts.length, 'contacts')
+      return contacts
+    } catch (error) {
+      console.error('[GetProspect] searchByDomain error:', error)
+      throw error
     }
-
-    const data = await response.json()
-
-    interface GPEmail {
-      email?: string
-      position?: string
-      first_name?: string
-      last_name?: string
-      confidence?: number
-      linkedin_url?: string
-    }
-
-    return (data.emails || [])
-      .filter((e: GPEmail) => e.email && this.isRelevantRole(e.position || ''))
-      .map((e: GPEmail) => ({
-        name: `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown',
-        email: e.email as string,
-        title: e.position || 'Unknown',
-        source: 'getprospect' as const,
-        confidence: (e.confidence || 0) > 80 ? ('high' as const) : ('medium' as const),
-        linkedin_url: e.linkedin_url,
-      }))
   }
 
-  // GetProspect charges 1 credit per domain search
   getCreditsUsed(_contacts: Contact[]): number {
     return 1
   }

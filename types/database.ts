@@ -13,38 +13,36 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          apollo_api_key: string | null
-          hunter_api_key: string | null
-          apollo_credits_remaining: number
-          hunter_credits_remaining: number
-          email_finder_keys: Json | null
-          last_checked_at: string | null
+          job_id: string | null
+          method: string | null // ✅ TEXT instead of enum
+          contacts_found: number
+          api_calls_made: number
+          credits_used: number
+          success: boolean
+          error_message: string | null
+          providers: string[] | null // ✅ Array of providers used
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          apollo_api_key?: string | null
-          hunter_api_key?: string | null
-          apollo_credits_remaining?: number
-          hunter_credits_remaining?: number
-          email_finder_keys?: Json | null
-          last_checked_at?: string | null
+          job_id?: string | null
+          method?: string | null // ✅ TEXT instead of enum
+          contacts_found?: number
+          api_calls_made?: number
+          credits_used?: number
+          success?: boolean
+          error_message?: string | null
+          providers?: string[] | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          apollo_api_key?: string | null
-          hunter_api_key?: string | null
-          apollo_credits_remaining?: number
-          hunter_credits_remaining?: number
-          email_finder_keys?: Json | null
-          last_checked_at?: string | null
-          created_at?: string
-          updated_at?: string
+          method?: string | null
+          contacts_found?: number
+          credits_used?: number
+          success?: boolean
+          error_message?: string | null
+          providers?: string[] | null
         }
         Relationships: []
       }
@@ -98,7 +96,13 @@ export type Database = {
           email: string
           contact_name: string | null
           contact_role: string | null
-          contact_source: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+          contact_source:
+            | 'linkedin'
+            | 'manual'
+            | 'company_website'
+            | 'referral'
+            | 'auto'
+            | null
           notes: string | null
           is_primary: boolean
           emails_sent: number
@@ -117,7 +121,13 @@ export type Database = {
           email: string
           contact_name?: string | null
           contact_role?: string | null
-          contact_source?: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+          contact_source?:
+            | 'linkedin'
+            | 'manual'
+            | 'company_website'
+            | 'referral'
+            | 'auto'
+            | null
           notes?: string | null
           is_primary?: boolean
           emails_sent?: number
@@ -136,7 +146,13 @@ export type Database = {
           email?: string
           contact_name?: string | null
           contact_role?: string | null
-          contact_source?: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+          contact_source?:
+            | 'linkedin'
+            | 'manual'
+            | 'company_website'
+            | 'referral'
+            | 'auto'
+            | null
           notes?: string | null
           is_primary?: boolean
           emails_sent?: number
@@ -150,11 +166,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "job_contacts_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'job_contacts_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -216,7 +232,7 @@ export type Database = {
           contributed_by: string | null
           created_at: string | null
           email: string
-          email_type: Database["public"]["Enums"]["email_type"]
+          email_type: Database['public']['Enums']['email_type']
           failed_count: number | null
           id: string
           updated_at: string | null
@@ -228,7 +244,7 @@ export type Database = {
           contributed_by?: string | null
           created_at?: string | null
           email: string
-          email_type?: Database["public"]["Enums"]["email_type"]
+          email_type?: Database['public']['Enums']['email_type']
           failed_count?: number | null
           id?: string
           updated_at?: string | null
@@ -240,7 +256,7 @@ export type Database = {
           contributed_by?: string | null
           created_at?: string | null
           email?: string
-          email_type?: Database["public"]["Enums"]["email_type"]
+          email_type?: Database['public']['Enums']['email_type']
           failed_count?: number | null
           id?: string
           updated_at?: string | null
@@ -272,11 +288,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "email_verifications_community_email_id_fkey"
-            columns: ["community_email_id"]
+            foreignKeyName: 'email_verifications_community_email_id_fkey'
+            columns: ['community_email_id']
             isOneToOne: false
-            referencedRelation: "community_emails"
-            referencedColumns: ["id"]
+            referencedRelation: 'community_emails'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -325,11 +341,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "emails_sent_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'emails_sent_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -366,18 +382,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "followup_reminders_email_sent_id_fkey"
-            columns: ["email_sent_id"]
+            foreignKeyName: 'followup_reminders_email_sent_id_fkey'
+            columns: ['email_sent_id']
             isOneToOne: false
-            referencedRelation: "emails_sent"
-            referencedColumns: ["id"]
+            referencedRelation: 'emails_sent'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "followup_reminders_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'followup_reminders_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -420,8 +436,8 @@ export type Database = {
           company_domain: string | null
           company_name: string
           created_at: string | null
-          email_source: Database["public"]["Enums"]["email_source"] | null
-          email_type: Database["public"]["Enums"]["email_type"] | null
+          email_source: Database['public']['Enums']['email_source'] | null
+          email_type: Database['public']['Enums']['email_type'] | null
           hr_email: string | null
           hr_name: string | null
           id: string
@@ -430,7 +446,7 @@ export type Database = {
           job_url: string
           location: string | null
           salary: string | null
-          status: Database["public"]["Enums"]["job_status"]
+          status: Database['public']['Enums']['job_status']
           updated_at: string | null
           user_id: string
         }
@@ -439,8 +455,8 @@ export type Database = {
           company_domain?: string | null
           company_name: string
           created_at?: string | null
-          email_source?: Database["public"]["Enums"]["email_source"] | null
-          email_type?: Database["public"]["Enums"]["email_type"] | null
+          email_source?: Database['public']['Enums']['email_source'] | null
+          email_type?: Database['public']['Enums']['email_type'] | null
           hr_email?: string | null
           hr_name?: string | null
           id?: string
@@ -449,7 +465,7 @@ export type Database = {
           job_url: string
           location?: string | null
           salary?: string | null
-          status?: Database["public"]["Enums"]["job_status"]
+          status?: Database['public']['Enums']['job_status']
           updated_at?: string | null
           user_id: string
         }
@@ -458,8 +474,8 @@ export type Database = {
           company_domain?: string | null
           company_name?: string
           created_at?: string | null
-          email_source?: Database["public"]["Enums"]["email_source"] | null
-          email_type?: Database["public"]["Enums"]["email_type"] | null
+          email_source?: Database['public']['Enums']['email_source'] | null
+          email_type?: Database['public']['Enums']['email_type'] | null
           hr_email?: string | null
           hr_name?: string | null
           id?: string
@@ -468,7 +484,7 @@ export type Database = {
           job_url?: string
           location?: string | null
           salary?: string | null
-          status?: Database["public"]["Enums"]["job_status"]
+          status?: Database['public']['Enums']['job_status']
           updated_at?: string | null
           user_id?: string
         }
@@ -519,18 +535,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "link_clicks_email_sent_id_fkey"
-            columns: ["email_sent_id"]
+            foreignKeyName: 'link_clicks_email_sent_id_fkey'
+            columns: ['email_sent_id']
             isOneToOne: false
-            referencedRelation: "emails_sent"
-            referencedColumns: ["id"]
+            referencedRelation: 'emails_sent'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "link_clicks_job_id_fkey"
-            columns: ["job_id"]
+            foreignKeyName: 'link_clicks_job_id_fkey'
+            columns: ['job_id']
             isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'jobs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -665,15 +681,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      email_source: "community" | "pattern" | "hunter" | "apollo" | "manual"
-      email_type: "generic" | "personal"
+      email_source: 'community' | 'pattern' | 'hunter' | 'apollo' | 'manual'
+      email_type: 'generic' | 'personal'
       job_status:
-        | "captured"
-        | "email_found"
-        | "email_sent"
-        | "interview"
-        | "offer"
-        | "rejected"
+        | 'captured'
+        | 'email_found'
+        | 'email_sent'
+        | 'interview'
+        | 'offer'
+        | 'rejected'
     }
     CompositeTypes: {
       [_ in never]: never
