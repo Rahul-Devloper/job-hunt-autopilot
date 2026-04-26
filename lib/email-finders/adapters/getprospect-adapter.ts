@@ -29,7 +29,21 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         throw new Error('Response body already consumed')
       }
 
-      let data: any
+      interface GetProspectEmail {
+        email?: string
+        position?: string
+        first_name?: string
+        last_name?: string
+        confidence?: number
+        linkedin_url?: string
+      }
+
+      interface GetProspectResponse {
+        emails?: GetProspectEmail[]
+        message?: string
+      }
+
+      let data: GetProspectResponse
       try {
         data = await response.json()
       } catch (parseError) {
@@ -51,11 +65,11 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
       console.log('[GetProspect] Processing', emails.length, 'emails')
 
       const contacts = emails
-        .filter((e: any) => e.email && this.isRelevantRole(e.position || ''))
-        .map((e: any) => ({
+        .filter((e: GetProspectEmail) => e.email && this.isRelevantRole(e.position || ''))
+        .map((e: GetProspectEmail) => ({
           name:
             `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown',
-          email: e.email,
+          email: e.email as string,
           title: e.position || 'Unknown',
           source: 'getprospect' as const,
           confidence:
@@ -71,7 +85,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
     }
   }
 
-  getCreditsUsed(_contacts: Contact[]): number {
+  getCreditsUsed(): number {
     return 1
   }
 }

@@ -30,7 +30,13 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
         },
       )
 
-      let data: any
+      interface SnovAuthResponse {
+        access_token?: string
+        expires_in?: number
+        error?: string
+      }
+
+      let data: SnovAuthResponse
       try {
         data = await response.json()
       } catch (parseError) {
@@ -48,7 +54,7 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
       }
 
       const expiresAt = new Date(
-        Date.now() + data.expires_in * 1000,
+        Date.now() + (data.expires_in ?? 0) * 1000,
       ).toISOString()
 
       return {
@@ -68,10 +74,7 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
     return this.authenticate(config)
   }
 
-  async searchByDomain(
-    domain: string,
-    accessToken: string,
-  ): Promise<Contact[]> {
+  async searchByDomain(): Promise<Contact[]> {
     // Snov.io v2 API requires async polling - skip for now
     console.warn('[Snov] Domain search not implemented (requires v2 async API)')
     return []

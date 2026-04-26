@@ -13,36 +13,38 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          job_id: string | null
-          method: string | null // ✅ TEXT instead of enum
-          contacts_found: number
-          api_calls_made: number
-          credits_used: number
-          success: boolean
-          error_message: string | null
-          providers: string[] | null // ✅ Array of providers used
+          email_finder_keys: Json | null
+          apollo_api_key: string | null
+          hunter_api_key: string | null
+          apollo_credits_remaining: number | null
+          hunter_credits_remaining: number | null
+          last_checked_at: string | null
+          updated_at: string
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          job_id?: string | null
-          method?: string | null // ✅ TEXT instead of enum
-          contacts_found?: number
-          api_calls_made?: number
-          credits_used?: number
-          success?: boolean
-          error_message?: string | null
-          providers?: string[] | null
+          email_finder_keys?: Json | null
+          apollo_api_key?: string | null
+          hunter_api_key?: string | null
+          apollo_credits_remaining?: number | null
+          hunter_credits_remaining?: number | null
+          last_checked_at?: string | null
+          updated_at?: string
           created_at?: string
         }
         Update: {
-          method?: string | null
-          contacts_found?: number
-          credits_used?: number
-          success?: boolean
-          error_message?: string | null
-          providers?: string[] | null
+          id?: string
+          user_id?: string
+          email_finder_keys?: Json | null
+          apollo_api_key?: string | null
+          hunter_api_key?: string | null
+          apollo_credits_remaining?: number | null
+          hunter_credits_remaining?: number | null
+          last_checked_at?: string | null
+          updated_at?: string
+          created_at?: string
         }
         Relationships: []
       }

@@ -79,7 +79,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await supabase.from('contact_discovery_logs').insert({
       user_id: auth.userId,
       job_id: job.id,
-      method: result.method,
+      method: result.method as 'apollo' | 'hunter' | 'manual' | 'combined' | null,
       contacts_found: savedContacts.length,
       credits_used: result.creditsUsed,
       success: result.success,

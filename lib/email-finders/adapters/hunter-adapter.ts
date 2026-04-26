@@ -31,8 +31,23 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
         throw new Error('Response body already consumed')
       }
 
+      interface HunterEmail {
+        value?: string
+        position?: string
+        first_name?: string
+        last_name?: string
+        confidence?: number
+        linkedin?: string
+      }
+
+      interface HunterResponse {
+        data?: { emails?: HunterEmail[] }
+        errors?: Array<{ details?: string }>
+        message?: string
+      }
+
       // ✅ Read the response once
-      let data: any
+      let data: HunterResponse
       try {
         data = await response.json()
       } catch (parseError) {
@@ -59,15 +74,6 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
       if (data.errors) {
         console.error('[Hunter] Data contains errors:', data.errors)
         throw new Error(`Hunter.io error: ${JSON.stringify(data.errors)}`)
-      }
-
-      interface HunterEmail {
-        value?: string
-        position?: string
-        first_name?: string
-        last_name?: string
-        confidence?: number
-        linkedin?: string
       }
 
       const emails = data.data?.emails || []
@@ -103,7 +109,7 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
     }
   }
 
-  getCreditsUsed(_contacts: Contact[]): number {
+  getCreditsUsed(): number {
     return 1
   }
 }

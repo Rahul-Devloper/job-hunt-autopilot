@@ -103,7 +103,7 @@ export class ContactDiscoveryService {
         .map((c) => ({ ...c, _score: this.scoreContact(c.title, jobTitle) }))
         .sort((a, b) => b._score - a._score)
         .slice(0, 4)
-        .map(({ _score: _, ...c }) => c as Contact)
+        .map((c) => ({ name: c.name, email: c.email, title: c.title, source: c.source, confidence: c.confidence, linkedin_url: c.linkedin_url }) as Contact)
 
       return {
         contacts: finalContacts,
