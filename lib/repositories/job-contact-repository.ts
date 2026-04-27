@@ -11,6 +11,7 @@ export interface JobContact {
   contact_source: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
   notes: string | null
   is_primary: boolean
+  is_poster: boolean
   emails_sent: number
   emails_opened: number
   emails_clicked: number

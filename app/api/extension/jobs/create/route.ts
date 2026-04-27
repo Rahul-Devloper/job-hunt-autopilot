@@ -28,8 +28,18 @@ export async function POST(request: Request) {
     const userId = validation.userId!
 
     const body = await request.json()
-    const { company_name, job_title, job_url, location, company_domain, salary, job_description } =
-      body
+    const {
+      company_name,
+      job_title,
+      job_url,
+      location,
+      company_domain,
+      salary,
+      job_description,
+      poster_name,
+      poster_title,
+      poster_linkedin_url,
+    } = body
 
     if (!company_name || !job_title || !job_url) {
       return NextResponse.json(
@@ -52,6 +62,9 @@ export async function POST(request: Request) {
         salary: salary || null,
         job_description: job_description || null,
         status: 'captured',
+        poster_name: poster_name || null,
+        poster_title: poster_title || null,
+        poster_linkedin_url: poster_linkedin_url || null,
       })
       .select()
       .single()

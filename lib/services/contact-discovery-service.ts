@@ -1,5 +1,6 @@
 import { EmailFinderRepository } from '@/lib/repositories/email-finder-repository'
 import { getAdapter } from '@/lib/email-finders/adapters'
+import { HunterAdapter } from '@/lib/email-finders/adapters/hunter-adapter'
 import type { EmailFinderProvider } from '@/types/email-finders'
 
 export interface Contact {
@@ -147,6 +148,47 @@ export class ContactDiscoveryService {
     if (j.includes('product') && t.includes('product')) score += 25
 
     return score
+  }
+
+  /**
+   * Look up the job poster's email by name using Hunter's email-finder endpoint.
+   * Returns null if poster_name is missing, Hunter isn't connected, or lookup fails.
+   */
+  static async findPosterContact(
+    job: {
+      poster_name: string | null
+      poster_title?: string | null
+      poster_linkedin_url?: string | null
+      company_name: string
+    },
+    companyDomain: string,
+    userId: string,
+  ): Promise<Contact | null> {
+    if (!job.poster_name) return null
+
+    const parts = job.poster_name.trim().split(/\s+/)
+    if (parts.length < 2) return null
+
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ')
+
+    try {
+      const token = await EmailFinderRepository.getValidToken(userId, 'hunter')
+      if (!token) return null
+
+      const adapter = new HunterAdapter()
+      return await adapter.findByName(
+        firstName,
+        lastName,
+        companyDomain,
+        token,
+        job.poster_title,
+        job.poster_linkedin_url,
+      )
+    } catch (err) {
+      console.error('[ContactDiscovery] Poster lookup failed:', err)
+      return null
+    }
   }
 
   static extractDomain(companyNameOrUrl: string): string | null {

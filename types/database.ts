@@ -107,6 +107,7 @@ export type Database = {
             | null
           notes: string | null
           is_primary: boolean
+          is_poster: boolean
           emails_sent: number
           emails_opened: number
           emails_clicked: number
@@ -132,6 +133,7 @@ export type Database = {
             | null
           notes?: string | null
           is_primary?: boolean
+          is_poster?: boolean
           emails_sent?: number
           emails_opened?: number
           emails_clicked?: number
@@ -157,6 +159,7 @@ export type Database = {
             | null
           notes?: string | null
           is_primary?: boolean
+          is_poster?: boolean
           emails_sent?: number
           emails_opened?: number
           emails_clicked?: number
@@ -447,6 +450,9 @@ export type Database = {
           job_title: string
           job_url: string
           location: string | null
+          poster_name: string | null
+          poster_title: string | null
+          poster_linkedin_url: string | null
           salary: string | null
           status: Database['public']['Enums']['job_status']
           updated_at: string | null
@@ -466,6 +472,9 @@ export type Database = {
           job_title: string
           job_url: string
           location?: string | null
+          poster_name?: string | null
+          poster_title?: string | null
+          poster_linkedin_url?: string | null
           salary?: string | null
           status?: Database['public']['Enums']['job_status']
           updated_at?: string | null
@@ -485,6 +494,9 @@ export type Database = {
           job_title?: string
           job_url?: string
           location?: string | null
+          poster_name?: string | null
+          poster_title?: string | null
+          poster_linkedin_url?: string | null
           salary?: string | null
           status?: Database['public']['Enums']['job_status']
           updated_at?: string | null

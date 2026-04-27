@@ -14,21 +14,6 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
     try {
       console.log('[GetProspect] Starting search for:', domain)
 
-      const response = await fetch(
-        `https://api.getprospect.com/public/v1/domain-search?domain=${encodeURIComponent(domain)}&limit=100`,
-        {
-          headers: {
-            'X-Api-Key': apiKey,
-          },
-        },
-      )
-
-      // Check if body already consumed
-      if (response.bodyUsed) {
-        console.error('[GetProspect] Body already used!')
-        throw new Error('Response body already consumed')
-      }
-
       interface GetProspectEmail {
         email?: string
         position?: string
@@ -43,15 +28,11 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         message?: string
       }
 
-      let data: GetProspectResponse
-      try {
-        data = await response.json()
-      } catch (parseError) {
-        console.error('[GetProspect] Failed to parse JSON:', parseError)
-        throw new Error(`Failed to parse GetProspect response: ${parseError}`)
-      }
-
-      console.log('[GetProspect] Response parsed successfully')
+      const response = await fetch(
+        `https://api.getprospect.com/public/v1/domain-search?domain=${encodeURIComponent(domain)}&limit=100`,
+        { headers: { 'X-Api-Key': apiKey }, cache: 'no-store' },
+      )
+      const data: GetProspectResponse = await response.json()
 
       if (!response.ok) {
         const errorMsg = data.message || 'Unknown error'

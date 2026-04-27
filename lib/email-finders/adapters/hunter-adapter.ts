@@ -18,19 +18,6 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
     try {
       console.log('[Hunter] Starting search for:', domain)
 
-      const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${apiKey}&limit=50`
-
-      // const url = `https://api.hunter.io/v2/domain-search?limit=10&domain=atos.com&api_key=44a9e4af7e81daeb13423a2d827a48997c193c35`
-
-      const response = await fetch(url)
-      console.log('Hunter Url==>', url)
-
-      // ✅ CRITICAL: Check bodyUsed before reading
-      if (response.bodyUsed) {
-        console.error('[Hunter] Body already used before json() call!')
-        throw new Error('Response body already consumed')
-      }
-
       interface HunterEmail {
         value?: string
         position?: string
@@ -46,16 +33,14 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
         message?: string
       }
 
-      // ✅ Read the response once
-      let data: HunterResponse
-      try {
-        data = await response.json()
-      } catch (parseError) {
-        console.error('[Hunter] Failed to parse JSON:', parseError)
-        throw new Error(`Failed to parse Hunter.io response: ${parseError}`)
-      }
+      const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${apiKey}&limit=10`
+      console.log('Hunter Url==>', url)
 
-      console.log('[Hunter] Response parsed successfully')
+      const response = await fetch(url, {
+  cache: 'no-store'  // to avoid body consumption issues as next.js caches fetch responses, we disable caching for this call since it's not critical to cache and we want to ensure fresh data and avoid potential issues with reading the response body multiple times.
+})
+      const data: HunterResponse = await response.json()
+
       console.log('[Hunter] Status:', response.status)
       console.log('[Hunter] Data:', {
         hasData: !!data,
@@ -63,29 +48,22 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
         emailCount: data?.data?.emails?.length,
       })
 
-      // ✅ Check for errors AFTER parsing
       if (!response.ok) {
         const errorMsg =
           data.errors?.[0]?.details || data.message || 'Unknown error'
-        console.error('[Hunter] API error:', errorMsg)
         throw new Error(`Hunter.io API error: ${response.status} - ${errorMsg}`)
       }
 
       if (data.errors) {
-        console.error('[Hunter] Data contains errors:', data.errors)
         throw new Error(`Hunter.io error: ${JSON.stringify(data.errors)}`)
       }
 
-      const emails = data.data?.emails || []
+      const emails: HunterEmail[] = data.data?.emails || []
       console.log('[Hunter] Processing', emails.length, 'emails')
 
       const contacts = emails
-        .filter((e: HunterEmail) => {
-          const hasEmail = !!e.value
-          const isRelevant = this.isRelevantRole(e.position || '')
-          return hasEmail && isRelevant
-        })
-        .map((e: HunterEmail) => ({
+        .filter((e) => !!e.value && this.isRelevantRole(e.position || ''))
+        .map((e) => ({
           name:
             `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown',
           email: e.value as string,
@@ -104,8 +82,53 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
       return contacts
     } catch (error) {
       console.error('[Hunter] searchByDomain error:', error)
-      // Re-throw to let service handle it
       throw error
+    }
+  }
+
+  async findByName(
+    firstName: string,
+    lastName: string,
+    domain: string,
+    apiKey: string,
+    posterTitle?: string | null,
+    posterLinkedIn?: string | null,
+  ): Promise<Contact | null> {
+    try {
+      const url = `https://api.hunter.io/v2/email-finder?first_name=${encodeURIComponent(firstName)}&last_name=${encodeURIComponent(lastName)}&domain=${encodeURIComponent(domain)}&api_key=${apiKey}`
+      console.log('[Hunter] findByName:', firstName, lastName, '@', domain)
+
+      interface HunterFinderResponse {
+        data?: {
+          email?: string
+          score?: number
+          position?: string
+          linkedin_url?: string
+        }
+        errors?: Array<{ details?: string }>
+        message?: string
+      }
+
+      const response = await fetch(url)
+      const data: HunterFinderResponse = await response.json()
+
+      if (!response.ok || !data.data?.email) {
+        console.log('[Hunter] findByName: no email found', data.errors || data.message)
+        return null
+      }
+
+      const score = data.data.score || 0
+      return {
+        name: `${firstName} ${lastName}`.trim(),
+        email: data.data.email,
+        title: posterTitle || data.data.position || 'Job Poster',
+        source: 'hunter' as const,
+        confidence: score > 90 ? 'high' : score > 70 ? 'medium' : ('low' as const),
+        linkedin_url: posterLinkedIn || data.data.linkedin_url || undefined,
+      }
+    } catch (error) {
+      console.error('[Hunter] findByName error:', error)
+      return null
     }
   }
 

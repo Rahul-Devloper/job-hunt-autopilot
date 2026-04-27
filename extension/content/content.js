@@ -223,37 +223,215 @@ async function handleCaptureClick(event) {
   }
 }
 
+/**
+ * Recursively search a JSON object for LinkedIn job poster data.
+ * Bounded to depth 6 to avoid blowing the stack on large payloads.
+ */
+function searchJsonForPoster(obj, depth) {
+  if (!obj || typeof obj !== 'object' || depth > 6) return null
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const r = searchJsonForPoster(item, depth + 1)
+      if (r) return r
+    }
+    return null
+  }
+
+  const keys = Object.keys(obj)
+
+  // Explicit posterFullName key — LinkedIn's canonical field
+  if (obj.posterFullName) {
+    return {
+      name: obj.posterFullName,
+      title: obj.posterTitle || null,
+      linkedin_url: obj.posterPublicIdentifier
+        ? 'https://www.linkedin.com/in/' + obj.posterPublicIdentifier
+        : null,
+    }
+  }
+
+  // firstName + lastName pair near a poster/hirer/recruiter context
+  if (obj.firstName && obj.lastName) {
+    const keyStr = keys.join(',').toLowerCase()
+    if (
+      keyStr.includes('poster') ||
+      keyStr.includes('hirer') ||
+      keyStr.includes('recruiter') ||
+      keyStr.includes('talent')
+    ) {
+      return {
+        name: (obj.firstName + ' ' + obj.lastName).trim(),
+        title: obj.headline || obj.title || null,
+        linkedin_url: obj.publicIdentifier
+          ? 'https://www.linkedin.com/in/' + obj.publicIdentifier
+          : null,
+      }
+    }
+  }
+
+  for (const key of keys) {
+    const val = obj[key]
+    if (val && typeof val === 'object') {
+      const r = searchJsonForPoster(val, depth + 1)
+      if (r) return r
+    }
+  }
+
+  return null
+}
+
+/**
+ * Extract the job poster's name, title, and LinkedIn URL from the current page.
+ * Tries DOM selectors first (fast), then falls back to JSON script tags.
+ * Always returns an object — nulls mean "not found".
+ */
+function extractPosterData() {
+  // Method 1: DOM selectors
+  const domSelectors = [
+    '.job-details-jobs-unified-top-card__job-insight--highlight a',
+    '.hirer-card__hirer-information a',
+    '.jobs-poster__name a',
+    '.job-details-jobs-unified-top-card__job-poster a',
+    '[data-tracking-control-name="public_jobs_topcard-hirer-popup"] span',
+  ]
+
+  for (const selector of domSelectors) {
+    try {
+      const el = document.querySelector(selector)
+      if (!el) continue
+      const name = (el.innerText || el.textContent || '').trim()
+      if (!name || name.length < 2) continue
+
+      const parent =
+        el.closest('[class*="hirer"]') ||
+        el.closest('[class*="poster"]') ||
+        el.parentElement
+      const titleEl = parent
+        ? parent.querySelector('[class*="subtitle"], [class*="title"], [class*="role"]')
+        : null
+
+      return {
+        name,
+        title: titleEl
+          ? (titleEl.innerText || titleEl.textContent || '').trim() || null
+          : null,
+        linkedin_url:
+          el.href && el.href.includes('linkedin.com/in/')
+            ? el.href.split('?')[0]
+            : null,
+      }
+    } catch {}
+  }
+
+  // Method 2: JSON script tags
+  try {
+    const scripts = document.querySelectorAll('script[type="application/json"]')
+    for (const script of scripts) {
+      try {
+        const text = script.textContent || ''
+        if (
+          !text.includes('poster') &&
+          !text.includes('hirer') &&
+          !text.includes('recruiter')
+        )
+          continue
+        const json = JSON.parse(text)
+        const poster = searchJsonForPoster(json, 0)
+        if (poster) return poster
+      } catch {}
+    }
+  } catch {}
+
+  return { name: null, title: null, linkedin_url: null }
+}
+
 function extractJobData() {
   try {
     console.log('Job Hunt Autopilot: Starting data extraction...')
 
-    // Company name - find link that goes to /company/
-    const companyElement = document.querySelector('a[href*="/company/"]')
-    const companyName = companyElement?.innerText?.trim() || ''
-    console.log('Company name:', companyName)
+    // ── Company name ─────────────────────────────────────────────────────────
+    const companySelectors = [
+      '.job-details-jobs-unified-top-card__company-name a',
+      '.job-details-jobs-unified-top-card__company-name',
+      '.jobs-unified-top-card__company-name a',
+      '.jobs-unified-top-card__company-name',
+      '[data-test-id="job-details-company-name"]',
+      '.topcard__org-name-link',
+      '.topcard__flavor a',
+      '.jobs-details-top-card__company-url',
+      'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
+      'a[href*="/company/"]',
+    ]
 
-    // Extract domain from company URL
+    let companyName = ''
+    let companyElement = null
+    for (const sel of companySelectors) {
+      const el = document.querySelector(sel)
+      const text = el?.textContent?.trim() || el?.innerText?.trim()
+      if (text && text.length > 0) {
+        companyName = text
+        companyElement = el
+        console.log(`[JHA] Company via selector "${sel}":`, companyName)
+        break
+      }
+    }
+
+    // og:title fallback: "Job Title at Company Name"
+    if (!companyName) {
+      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content')
+      if (ogTitle && ogTitle.includes(' at ')) {
+        const company = ogTitle.split(' at ').pop()?.trim()
+        if (company) { companyName = company; console.log('[JHA] Company via og:title:', companyName) }
+      }
+    }
+
+    // Page title fallback: "Title at Company | LinkedIn"
+    if (!companyName && document.title.includes(' at ')) {
+      const company = document.title.split(' at ')[1]?.split('|')[0]?.trim()
+      if (company) { companyName = company; console.log('[JHA] Company via page title:', companyName) }
+    }
+
+    // Extract domain from company /company/ URL
     let companyDomain = ''
-    if (companyElement) {
-      const match = companyElement.href.match(/linkedin\.com\/company\/([^\/]+)/)
+    if (companyElement && companyElement.href) {
+      const match = companyElement.href.match(/linkedin\.com\/company\/([^/?]+)/)
       if (match) companyDomain = match[1] + '.com'
     }
     console.log('Company domain:', companyDomain)
 
-    // Job title - LinkedIn puts it in a <p> that is a direct child of div[data-display-contents]
-    // The company name <p> is nested inside an <a>, so we skip those
-    let titleElement = null
-    for (const p of document.querySelectorAll('div[data-display-contents] > p')) {
-      if (!p.closest('a')) { titleElement = p; break }
-    }
-    if (!titleElement) {
-      // Fallback: first h1 with meaningful text
-      for (const el of document.querySelectorAll('h1')) {
-        const text = el.innerText.trim()
-        if (text && text.length > 2) { titleElement = el; break }
+    // ── Job title ─────────────────────────────────────────────────────────────
+    const titleSelectors = [
+      '.job-details-jobs-unified-top-card__job-title h1',
+      '.job-details-jobs-unified-top-card__job-title',
+      '.jobs-unified-top-card__job-title h1',
+      '.jobs-unified-top-card__job-title',
+      '.topcard__title',
+      '[data-test-id="job-details-job-title"]',
+      'h1.t-24',
+      'h1',
+    ]
+
+    let jobTitle = ''
+    for (const sel of titleSelectors) {
+      const el = document.querySelector(sel)
+      const text = el?.textContent?.trim() || el?.innerText?.trim()
+      if (text && text.length > 2) {
+        jobTitle = text
+        console.log(`[JHA] Title via selector "${sel}":`, jobTitle)
+        break
       }
     }
-    const jobTitle = titleElement?.innerText?.trim() || ''
+
+    // Fallback: <p> that is a direct child of div[data-display-contents] and not inside <a>
+    if (!jobTitle) {
+      for (const p of document.querySelectorAll('div[data-display-contents] > p')) {
+        if (!p.closest('a')) {
+          const text = p.innerText?.trim()
+          if (text && text.length > 2) { jobTitle = text; break }
+        }
+      }
+    }
+
     console.log('Job title:', jobTitle)
 
     // Job URL
@@ -280,11 +458,20 @@ function extractJobData() {
     if (!companyName || !jobTitle || !jobUrl) {
       console.error('Missing required fields:', { companyName, jobTitle, jobUrl })
       console.log('=== DEBUG ===')
-      console.log('Company link found:', companyElement)
-      console.log('Title element found:', titleElement)
-      console.log('First p tag:', document.querySelector('p')?.innerText)
-      console.log('First h1 tag:', document.querySelector('h1')?.innerText)
+      console.log('og:title:', document.querySelector('meta[property="og:title"]')?.getAttribute('content'))
+      console.log('page title:', document.title)
+      console.log('First h1:', document.querySelector('h1')?.innerText)
+      console.log('First p:', document.querySelector('p')?.innerText)
       throw new Error('Missing required job data. Company: ' + !!companyName + ', Title: ' + !!jobTitle)
+    }
+
+    // Poster data — fault-tolerant, never throws
+    let posterData = { name: null, title: null, linkedin_url: null }
+    try {
+      posterData = extractPosterData()
+      console.log('Poster data:', posterData)
+    } catch {
+      console.warn('Job Hunt Autopilot: Poster extraction failed (non-fatal)')
     }
 
     const result = {
@@ -296,6 +483,9 @@ function extractJobData() {
       salary,
       job_description: jobDescription || null,
       status: 'captured',
+      poster_name: posterData.name,
+      poster_title: posterData.title,
+      poster_linkedin_url: posterData.linkedin_url,
     }
 
     console.log('Job Hunt Autopilot: Successfully extracted data:', result)

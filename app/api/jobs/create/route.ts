@@ -13,6 +13,9 @@ const JobSchema = z.object({
   status: z
     .enum(['captured', 'email_found', 'email_sent', 'interview', 'offer', 'rejected'])
     .default('captured'),
+  poster_name: z.string().nullable().optional(),
+  poster_title: z.string().nullable().optional(),
+  poster_linkedin_url: z.string().nullable().optional(),
   // Optional: extension sends this after user logs in via web
   user_id: z.string().uuid().optional(),
 })

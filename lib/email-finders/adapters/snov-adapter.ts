@@ -19,14 +19,13 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
         'https://api.snov.io/v1/oauth/access_token',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             client_id: credentials.client_id,
             client_secret: credentials.client_secret,
             grant_type: 'client_credentials',
           }),
+          cache: 'no-store',
         },
       )
 
@@ -36,12 +35,7 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
         error?: string
       }
 
-      let data: SnovAuthResponse
-      try {
-        data = await response.json()
-      } catch (parseError) {
-        throw new Error(`Failed to parse Snov.io auth response: ${parseError}`)
-      }
+      const data: SnovAuthResponse = await response.json()
 
       if (!response.ok) {
         throw new Error(

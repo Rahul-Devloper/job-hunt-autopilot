@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Mail, Star, Trash2, Plus, TrendingUp } from 'lucide-react'
+import { Mail, Star, Trash2, Plus, TrendingUp, ExternalLink, Pin } from 'lucide-react'
 import { AddContactDialog } from '@/components/dashboard/add-contact-dialog'
 import type { JobContact } from '@/lib/repositories'
 
@@ -118,9 +118,11 @@ export function ContactList({
                     <div
                       key={contact.id}
                       className={`p-3 rounded-lg border ${
-                        contact.is_primary
-                          ? 'border-blue-300 bg-blue-50'
-                          : 'border-gray-200 bg-white'
+                        contact.is_poster
+                          ? 'border-amber-300 bg-amber-50'
+                          : contact.is_primary
+                            ? 'border-blue-300 bg-blue-50'
+                            : 'border-gray-200 bg-white'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -129,9 +131,21 @@ export function ContactList({
                             <span className="text-sm font-medium truncate">
                               {contact.email}
                             </span>
-                            {contact.is_primary && (
+                            {contact.is_poster && (
+                              <Badge className="flex items-center gap-1 text-xs py-0 h-5 bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100">
+                                <Pin className="h-2.5 w-2.5 fill-current" />
+                                Job Poster
+                              </Badge>
+                            )}
+                            {contact.is_primary && !contact.is_poster && (
                               <Badge className="flex items-center gap-1 text-xs py-0 h-5">
                                 <Star className="h-2.5 w-2.5 fill-current" />
+                                Primary
+                              </Badge>
+                            )}
+                            {contact.is_primary && contact.is_poster && (
+                              <Badge variant="outline" className="flex items-center gap-1 text-xs py-0 h-5 text-amber-700 border-amber-300">
+                                <Star className="h-2.5 w-2.5" />
                                 Primary
                               </Badge>
                             )}
@@ -143,6 +157,18 @@ export function ContactList({
                                 .filter(Boolean)
                                 .join(' · ')}
                             </p>
+                          )}
+
+                          {contact.is_poster && contact.notes && contact.notes.startsWith('http') && (
+                            <a
+                              href={contact.notes}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              LinkedIn Profile
+                            </a>
                           )}
 
                           {contact.emails_sent > 0 && (
@@ -159,7 +185,7 @@ export function ContactList({
                             </div>
                           )}
 
-                          {contact.notes && (
+                          {contact.notes && !contact.is_poster && (
                             <p className="text-xs text-gray-500 mt-1 italic">
                               {contact.notes}
                             </p>
