@@ -78,7 +78,7 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
           linkedin_url: e.linkedin,
         }))
 
-      console.log('[Hunter] Filtered to', contacts.length, 'relevant contacts')
+      console.log('[Hunter] Filtered to', contacts?.length, 'relevant contacts')
       return contacts
     } catch (error) {
       console.error('[Hunter] searchByDomain error:', error)

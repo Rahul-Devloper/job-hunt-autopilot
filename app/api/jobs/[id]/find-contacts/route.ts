@@ -124,7 +124,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     if (savedContacts.length === 0) {
-      return ApiResponseBuilder.error('No contacts found. Make sure API keys are configured in Settings.')
+      return ApiResponseBuilder.error('No Relevant contacts found.')
     }
 
     // Log discovery attempt
