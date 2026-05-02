@@ -90,6 +90,8 @@ async function handleCaptureClick(event) {
   `
 
   try {
+    console.log('[JHA] Waiting for poster section to load...')
+    await waitForPoster(5000)
     const jobData = extractJobData()
     const API_URL = await getApiUrl()
 
@@ -281,68 +283,131 @@ function searchJsonForPoster(obj, depth) {
 }
 
 /**
+ * Poll the DOM until the "Job poster" or "Meet the hiring team" section appears.
+ * LinkedIn lazy-loads the hiring team section after main content — without this,
+ * extractPosterData() runs before the poster DOM exists and always returns null.
+ */
+function waitForPoster(timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    const start = Date.now()
+
+    function check() {
+      const allP = document.querySelectorAll('p')
+      for (const p of allP) {
+        if (p.textContent?.trim() === 'Job poster') {
+          console.log('[JHA] Poster section detected in DOM')
+          resolve(true)
+          return
+        }
+      }
+      for (const p of allP) {
+        if (p.textContent?.trim() === 'Meet the hiring team') {
+          console.log('[JHA] Hiring team section detected in DOM')
+          resolve(true)
+          return
+        }
+      }
+      if (Date.now() - start > timeoutMs) {
+        console.log('[JHA] Poster section not found after timeout — proceeding without poster')
+        resolve(false)
+        return
+      }
+      setTimeout(check, 300)
+    }
+
+    check()
+  })
+}
+
+/**
  * Extract the job poster's name, title, and LinkedIn URL from the current page.
- * Tries DOM selectors first (fast), then falls back to JSON script tags.
+ * Anchors on the visible "Job poster" label text — more reliable than hashed class names.
  * Always returns an object — nulls mean "not found".
  */
 function extractPosterData() {
-  // Method 1: DOM selectors
-  const domSelectors = [
-    '.job-details-jobs-unified-top-card__job-insight--highlight a',
-    '.hirer-card__hirer-information a',
-    '.jobs-poster__name a',
-    '.job-details-jobs-unified-top-card__job-poster a',
-    '[data-tracking-control-name="public_jobs_topcard-hirer-popup"] span',
-  ]
+  try {
+    const posterParagraphs = [...document.querySelectorAll('p')]
+      .filter(p => p.textContent?.trim() === 'Job poster')
+    console.log('[JHA] "Job poster" paragraphs found:', posterParagraphs.length)
 
-  for (const selector of domSelectors) {
+    const hiringParagraphs = [...document.querySelectorAll('p')]
+      .filter(p => p.textContent?.trim() === 'Meet the hiring team')
+    console.log('[JHA] "Meet the hiring team" paragraphs found:', hiringParagraphs.length)
+    const allParagraphs = document.querySelectorAll('p')
+
+    // Strategy 1: Find the "Job poster" label, walk up to the poster card
+    let jobPosterLabel = null
+    for (const p of allParagraphs) {
+      if (p.textContent?.trim() === 'Job poster') {
+        jobPosterLabel = p
+        break
+      }
+    }
+
+    if (jobPosterLabel) {
+      const posterCard = jobPosterLabel.closest('a[href*="linkedin.com/in/"]')
+      if (posterCard) {
+        const linkedinUrl = posterCard.href?.split('?')[0] || null
+        const paragraphs = posterCard.querySelectorAll('p')
+        let name = null
+        let title = null
+
+        for (const p of paragraphs) {
+          const text = p.textContent?.trim()
+          if (!text || text === 'Job poster') continue
+          if (!name && text.length > 2 && text.length < 60 && !text.includes('•')) {
+            name = text
+          } else if (!title && text.length > 5 && text !== name) {
+            title = text
+          }
+        }
+
+        // Fallback: derive name from LinkedIn URL slug
+        if (!name && linkedinUrl) {
+          const slug = linkedinUrl.split('/in/')[1]?.replace(/\/$/, '') || ''
+          name = slug.split('-').slice(0, -1).join(' ') || slug
+        }
+
+        console.log('[JHA] Poster found via "Job poster" label:', { name, title, linkedinUrl })
+        return { poster_name: name, poster_title: title, poster_linkedin_url: linkedinUrl }
+      }
+    }
+
+    // Strategy 2: "Meet the hiring team" section
+    for (const p of allParagraphs) {
+      if (p.textContent?.trim() === 'Meet the hiring team') {
+        const section = p.closest('div')
+        const link = section?.querySelector('a[href*="linkedin.com/in/"]')
+        if (link) {
+          const name = link.textContent?.trim() || null
+          const linkedinUrl = link.href?.split('?')[0] || null
+          console.log('[JHA] Poster found via "Meet the hiring team":', name)
+          return { poster_name: name, poster_title: null, poster_linkedin_url: linkedinUrl }
+        }
+      }
+    }
+
+    // Strategy 3: JSON script tags (LinkedIn embedded data)
     try {
-      const el = document.querySelector(selector)
-      if (!el) continue
-      const name = (el.innerText || el.textContent || '').trim()
-      if (!name || name.length < 2) continue
-
-      const parent =
-        el.closest('[class*="hirer"]') ||
-        el.closest('[class*="poster"]') ||
-        el.parentElement
-      const titleEl = parent
-        ? parent.querySelector('[class*="subtitle"], [class*="title"], [class*="role"]')
-        : null
-
-      return {
-        name,
-        title: titleEl
-          ? (titleEl.innerText || titleEl.textContent || '').trim() || null
-          : null,
-        linkedin_url:
-          el.href && el.href.includes('linkedin.com/in/')
-            ? el.href.split('?')[0]
-            : null,
+      const scripts = document.querySelectorAll('script[type="application/json"]')
+      for (const script of scripts) {
+        try {
+          const text = script.textContent || ''
+          if (!text.includes('poster') && !text.includes('hirer') && !text.includes('recruiter')) continue
+          const json = JSON.parse(text)
+          const poster = searchJsonForPoster(json, 0)
+          if (poster) return { poster_name: poster.name, poster_title: poster.title, poster_linkedin_url: poster.linkedin_url }
+        } catch {}
       }
     } catch {}
+
+    console.log('[JHA] No poster found on this page')
+    return { poster_name: null, poster_title: null, poster_linkedin_url: null }
+
+  } catch (e) {
+    console.error('[JHA] extractPosterData error:', e)
+    return { poster_name: null, poster_title: null, poster_linkedin_url: null }
   }
-
-  // Method 2: JSON script tags
-  try {
-    const scripts = document.querySelectorAll('script[type="application/json"]')
-    for (const script of scripts) {
-      try {
-        const text = script.textContent || ''
-        if (
-          !text.includes('poster') &&
-          !text.includes('hirer') &&
-          !text.includes('recruiter')
-        )
-          continue
-        const json = JSON.parse(text)
-        const poster = searchJsonForPoster(json, 0)
-        if (poster) return poster
-      } catch {}
-    }
-  } catch {}
-
-  return { name: null, title: null, linkedin_url: null }
 }
 
 function extractJobData() {
@@ -466,7 +531,7 @@ function extractJobData() {
     }
 
     // Poster data — fault-tolerant, never throws
-    let posterData = { name: null, title: null, linkedin_url: null }
+    let posterData = { poster_name: null, poster_title: null, poster_linkedin_url: null }
     try {
       posterData = extractPosterData()
       console.log('Poster data:', posterData)
@@ -483,9 +548,9 @@ function extractJobData() {
       salary,
       job_description: jobDescription || null,
       status: 'captured',
-      poster_name: posterData.name,
-      poster_title: posterData.title,
-      poster_linkedin_url: posterData.linkedin_url,
+      poster_name: posterData.poster_name,
+      poster_title: posterData.poster_title,
+      poster_linkedin_url: posterData.poster_linkedin_url,
     }
 
     console.log('Job Hunt Autopilot: Successfully extracted data:', result)
