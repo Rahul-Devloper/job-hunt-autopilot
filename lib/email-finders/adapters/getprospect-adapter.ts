@@ -15,7 +15,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
    * GetProspect does NOT support domain-only search.
    * Returns empty array — domain search is handled by Hunter only.
    */
-  async searchByDomain(_domain: string, _apiKey: string): Promise<Contact[]> {
+  async searchByDomain(): Promise<Contact[]> {
     console.log('[GetProspect] Domain-only search not supported — skipping')
     return []
   }
