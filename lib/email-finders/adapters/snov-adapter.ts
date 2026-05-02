@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { BaseEmailFinderAdapter } from './base-adapter'
 import type { Contact } from '@/lib/services/contact-discovery-service'
 import type { AuthResult } from '@/types/email-finders'
@@ -15,36 +16,23 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
     client_secret: string
   }): Promise<AuthResult> {
     try {
-      const response = await fetch(
-        'https://api.snov.io/v1/oauth/access_token',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: credentials.client_id,
-            client_secret: credentials.client_secret,
-            grant_type: 'client_credentials',
-          }),
-          cache: 'no-store',
-        },
-      )
-
       interface SnovAuthResponse {
         access_token?: string
         expires_in?: number
         error?: string
       }
 
-      const data: SnovAuthResponse = await response.json()
-
-      if (!response.ok) {
-        throw new Error(
-          `Snov.io auth failed: ${response.status} - ${data.error || 'Unknown'}`,
-        )
-      }
+      const { data } = await axios.post<SnovAuthResponse>(
+        'https://api.snov.io/v1/oauth/access_token',
+        {
+          client_id: credentials.client_id,
+          client_secret: credentials.client_secret,
+          grant_type: 'client_credentials',
+        },
+      )
 
       if (!data.access_token) {
-        throw new Error('No access token received from Snov.io')
+        throw new Error(data.error || 'No access token received from Snov.io')
       }
 
       const expiresAt = new Date(

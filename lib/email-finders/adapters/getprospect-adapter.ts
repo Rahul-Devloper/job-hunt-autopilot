@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { BaseEmailFinderAdapter } from './base-adapter'
 import type { Contact } from '@/lib/services/contact-discovery-service'
 import type { AuthResult } from '@/types/email-finders'
@@ -21,7 +22,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
 
   /**
    * Find a specific person's email by full name + domain.
-   * Endpoint: GET /v2/email-finder?full_name=...&domain=...&api_key=...
+   * Endpoint: GET /v2/email-finder
    */
   async findByName(
     firstName: string,
@@ -33,7 +34,6 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
   ): Promise<Contact | null> {
     try {
       const fullName = `${firstName} ${lastName}`.trim()
-      const url = `https://api.getprospect.com/v2/email-finder?full_name=${encodeURIComponent(fullName)}&domain=${encodeURIComponent(domain)}&api_key=${apiKey}`
       console.log('[GetProspect] findByName:', fullName, '@', domain)
 
       interface GetProspectFinderResponse {
@@ -47,8 +47,10 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         errors?: string[]
       }
 
-      const response = await fetch(url, { cache: 'no-store' })
-      const data: GetProspectFinderResponse = await response.json()
+      const { data } = await axios.get<GetProspectFinderResponse>(
+        'https://api.getprospect.com/v2/email-finder',
+        { params: { full_name: fullName, domain, api_key: apiKey } },
+      )
 
       if (!data.success || !data.data?.email) {
         console.log('[GetProspect] findByName: no email found', data.errors)
@@ -61,8 +63,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         email: data.data.email,
         title: posterTitle || data.data.position || 'Job Poster',
         source: 'getprospect' as const,
-        confidence:
-          confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low',
+        confidence: confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low',
         linkedin_url: posterLinkedIn || data.data.linkedin || undefined,
       }
     } catch (error) {
@@ -87,47 +88,31 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
       interface GetProspectInsightResponse {
         firstName?: string
         lastName?: string
-        contactInfo?: string
-        getProspectId?: string
         company?: {
           name?: string
           domain?: string
           position?: string
         }
-        linkedin?: Array<{ id?: string; type?: string }>
-        geolocation?: string
       }
 
-      const insightUrl = `https://api.getprospect.com/public/v1/insights/contact?linkedinUrl=${encodeURIComponent(linkedinUrl)}&api_key=${apiKey}`
-      const insightResponse = await fetch(insightUrl, { cache: 'no-store' })
-      const insightData: GetProspectInsightResponse = await insightResponse.json()
+      const { data } = await axios.get<GetProspectInsightResponse>(
+        'https://api.getprospect.com/public/v1/insights/contact',
+        { params: { linkedinUrl, api_key: apiKey } },
+      )
 
-      console.log('[GetProspect] findByLinkedIn insight:', {
-        firstName: insightData.firstName,
-        lastName: insightData.lastName,
-        domain: insightData.company?.domain,
-      })
-
-      if (!insightData.firstName || !insightData.lastName) {
-        console.log('[GetProspect] findByLinkedIn: no profile data returned')
+      if (!data.firstName || !data.lastName || !data.company?.domain) {
+        console.log('[GetProspect] findByLinkedIn: incomplete profile data')
         return null
       }
 
-      const verifiedDomain = insightData.company?.domain
-      if (!verifiedDomain) {
-        console.log('[GetProspect] findByLinkedIn: no domain in response')
-        return null
-      }
+      console.log(`[GetProspect] findByLinkedIn → findByName: ${data.firstName} ${data.lastName} @ ${data.company.domain}`)
 
-      const title = posterTitle || insightData.company?.position || 'Job Poster'
-
-      console.log(`[GetProspect] findByLinkedIn → findByName: ${insightData.firstName} ${insightData.lastName} @ ${verifiedDomain}`)
       return await this.findByName(
-        insightData.firstName,
-        insightData.lastName,
-        verifiedDomain,
+        data.firstName,
+        data.lastName,
+        data.company.domain,
         apiKey,
-        title,
+        posterTitle || data.company.position || null,
         linkedinUrl,
       )
     } catch (error) {
