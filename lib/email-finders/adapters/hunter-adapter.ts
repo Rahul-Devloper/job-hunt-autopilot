@@ -1,6 +1,7 @@
 import { BaseEmailFinderAdapter } from './base-adapter'
 import type { Contact } from '@/lib/services/contact-discovery-service'
 import type { AuthResult } from '@/types/email-finders'
+import { json } from 'zod'
 
 /**
  * Hunter.io adapter — simple API key, no token refresh needed.
@@ -37,9 +38,12 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
       console.log('Hunter Url==>', url)
 
       const response = await fetch(url, {
-  cache: 'no-store'  // to avoid body consumption issues as next.js caches fetch responses, we disable caching for this call since it's not critical to cache and we want to ensure fresh data and avoid potential issues with reading the response body multiple times.
-})
+        cache: 'no-store', // to avoid body consumption issues as next.js caches fetch responses, we disable caching for this call since it's not critical to cache and we want to ensure fresh data and avoid potential issues with reading the response body multiple times.
+      })
       const data: HunterResponse = await response.json()
+      // I need to see stringified version of the response to debug issues with body consumption
+      const jsonData = json.stringify(data)
+      console.log('[Hunter] API response received==>', jsonData) // Log the entire response for debugging
 
       console.log('[Hunter] Status:', response.status)
       console.log('[Hunter] Data:', {

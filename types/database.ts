@@ -104,6 +104,7 @@ export type Database = {
             | 'company_website'
             | 'referral'
             | 'auto'
+            | 'poster'
             | null
           notes: string | null
           is_primary: boolean
@@ -130,6 +131,7 @@ export type Database = {
             | 'company_website'
             | 'referral'
             | 'auto'
+            | 'poster'
             | null
           notes?: string | null
           is_primary?: boolean
@@ -156,6 +158,7 @@ export type Database = {
             | 'company_website'
             | 'referral'
             | 'auto'
+            | 'poster'
             | null
           notes?: string | null
           is_primary?: boolean

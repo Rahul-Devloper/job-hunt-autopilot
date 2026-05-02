@@ -4,7 +4,7 @@ import { ContactDiscoveryService } from '@/lib/services/contact-discovery-servic
 import { jobContactRepository, jobRepository } from '@/lib/repositories'
 import { createClient } from '@/lib/supabase/server'
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(_request: Request, { params }: { params: { id: string } }) {
   try {
     const auth = await AuthService.authenticateCookie()
 
@@ -45,7 +45,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
       console.log(`[FindContacts] Trying poster lookup for: ${job.poster_name}`)
       try {
         const posterContact = await ContactDiscoveryService.findPosterContact(
-          job,
+          job.poster_name ?? null,
+          job.poster_title ?? null,
+          job.poster_linkedin_url ?? null,
           companyDomain,
           auth.userId,
         )
@@ -58,7 +60,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
             email: posterContact.email,
             contact_name: posterContact.name,
             contact_role: posterContact.title,
-            contact_source: 'auto',
+            contact_source: 'poster',
             is_primary: true,
             is_poster: true,
             notes: posterContact.linkedin_url || null,

@@ -8,7 +8,7 @@ export interface JobContact {
   email: string
   contact_name: string | null
   contact_role: string | null
-  contact_source: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | null
+  contact_source: 'linkedin' | 'manual' | 'company_website' | 'referral' | 'auto' | 'poster' | null
   notes: string | null
   is_primary: boolean
   is_poster: boolean

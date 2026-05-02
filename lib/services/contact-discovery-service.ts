@@ -1,6 +1,5 @@
 import { EmailFinderRepository } from '@/lib/repositories/email-finder-repository'
 import { getAdapter } from '@/lib/email-finders/adapters'
-import { HunterAdapter } from '@/lib/email-finders/adapters/hunter-adapter'
 import type { EmailFinderProvider } from '@/types/email-finders'
 
 export interface Contact {
@@ -151,42 +150,83 @@ export class ContactDiscoveryService {
   }
 
   /**
-   * Look up the job poster's email by name using Hunter's email-finder endpoint.
-   * Returns null if poster_name is missing, Hunter isn't connected, or lookup fails.
+   * Look up the job poster's email.
+   * Strategy 1: LinkedIn URL lookup (most accurate — tries all providers with findByLinkedIn).
+   * Strategy 2: Name + domain lookup (fallback — tries all providers with findByName).
    */
   static async findPosterContact(
-    job: {
-      poster_name: string | null
-      poster_title?: string | null
-      poster_linkedin_url?: string | null
-      company_name: string
-    },
+    posterName: string | null,
+    posterTitle: string | null,
+    posterLinkedInUrl: string | null,
     companyDomain: string,
     userId: string,
   ): Promise<Contact | null> {
-    if (!job.poster_name) return null
-
-    const parts = job.poster_name.trim().split(/\s+/)
-    if (parts.length < 2) return null
-
-    const firstName = parts[0]
-    const lastName = parts.slice(1).join(' ')
-
     try {
-      const token = await EmailFinderRepository.getValidToken(userId, 'hunter')
-      if (!token) return null
+      const providers = await EmailFinderRepository.getActiveProviders(userId)
 
-      const adapter = new HunterAdapter()
-      return await adapter.findByName(
-        firstName,
-        lastName,
-        companyDomain,
-        token,
-        job.poster_title,
-        job.poster_linkedin_url,
-      )
+      type AdapterWithLinkedIn = {
+        findByLinkedIn: (url: string, token: string, title?: string | null) => Promise<Contact | null>
+      }
+      type AdapterWithName = {
+        findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
+      }
+
+      // Strategy 1: LinkedIn URL lookup
+      if (posterLinkedInUrl) {
+        for (const { provider } of providers) {
+          try {
+            const adapter = getAdapter(provider)
+            if (typeof (adapter as unknown as AdapterWithLinkedIn).findByLinkedIn !== 'function') continue
+
+            const token = await EmailFinderRepository.getValidToken(userId, provider)
+            if (!token) continue
+
+            console.log(`[ContactDiscovery] Trying LinkedIn URL lookup via ${provider}`)
+            const contact = await (adapter as unknown as AdapterWithLinkedIn).findByLinkedIn(posterLinkedInUrl, token, posterTitle)
+
+            if (contact) {
+              console.log(`[ContactDiscovery] LinkedIn lookup success via ${provider}:`, contact.email)
+              return contact
+            }
+          } catch (err) {
+            console.error(`[ContactDiscovery] findByLinkedIn error for ${provider}:`, err)
+          }
+        }
+      }
+
+      // Strategy 2: Name + domain lookup
+      if (posterName) {
+        const parts = posterName.trim().split(/\s+/)
+        if (parts.length >= 2) {
+          const firstName = parts[0]
+          const lastName = parts.slice(1).join(' ')
+
+          for (const { provider } of providers) {
+            try {
+              const adapter = getAdapter(provider)
+              if (typeof (adapter as unknown as AdapterWithName).findByName !== 'function') continue
+
+              const token = await EmailFinderRepository.getValidToken(userId, provider)
+              if (!token) continue
+
+              console.log(`[ContactDiscovery] Trying name lookup via ${provider}`)
+              const contact = await (adapter as unknown as AdapterWithName).findByName(firstName, lastName, companyDomain, token, posterTitle, posterLinkedInUrl)
+
+              if (contact) {
+                console.log(`[ContactDiscovery] Name lookup success via ${provider}:`, contact.email)
+                return contact
+              }
+            } catch (err) {
+              console.error(`[ContactDiscovery] findByName error for ${provider}:`, err)
+            }
+          }
+        }
+      }
+
+      console.log('[ContactDiscovery] All poster lookup strategies exhausted — no contact found')
+      return null
     } catch (err) {
-      console.error('[ContactDiscovery] Poster lookup failed:', err)
+      console.error('[ContactDiscovery] findPosterContact error:', err)
       return null
     }
   }
