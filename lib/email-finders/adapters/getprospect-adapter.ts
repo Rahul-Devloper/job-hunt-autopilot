@@ -63,7 +63,8 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         email: data.data.email,
         title: posterTitle || data.data.position || 'Job Poster',
         source: 'getprospect' as const,
-        confidence: confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low',
+        confidence:
+          confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low',
         linkedin_url: posterLinkedIn || data.data.linkedin || undefined,
       }
     } catch (error) {
@@ -105,7 +106,9 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         return null
       }
 
-      console.log(`[GetProspect] findByLinkedIn → findByName: ${data.firstName} ${data.lastName} @ ${data.company.domain}`)
+      console.log(
+        `[GetProspect] findByLinkedIn → findByName: ${data.firstName} ${data.lastName} @ ${data.company.domain}`,
+      )
 
       return await this.findByName(
         data.firstName,
