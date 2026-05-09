@@ -5,6 +5,7 @@ import { z } from 'zod'
 const JobSchema = z.object({
   company_name: z.string().min(1, 'Company name is required'),
   company_domain: z.string().nullable().optional(),
+  company_linkedin_url: z.string().nullable().optional(),
   job_title: z.string().min(1, 'Job title is required'),
   job_url: z.string().url('Invalid job URL'),
   location: z.string().nullable().optional(),

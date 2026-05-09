@@ -34,6 +34,11 @@ function isJobPage() {
   return window.location.href.includes('linkedin.com/jobs/view/')
 }
 
+function isLinkedInPeoplePage() {
+  return window.location.href.includes('linkedin.com/company/') &&
+         window.location.href.includes('/people/')
+}
+
 function injectCaptureButton() {
   if (document.getElementById('jha-capture-button')) return
 
@@ -410,6 +415,35 @@ function extractPosterData() {
   }
 }
 
+function extractCompanyLinkedInUrl() {
+  try {
+    const selectors = [
+      '.job-details-jobs-unified-top-card__company-name a',
+      '.jobs-unified-top-card__company-name a',
+      'a[href*="linkedin.com/company/"]',
+      '.topcard__org-name-link',
+    ]
+
+    for (const selector of selectors) {
+      const el = document.querySelector(selector)
+      const href = el?.href
+      if (href && href.includes('linkedin.com/company/')) {
+        const match = href.match(/(https:\/\/www\.linkedin\.com\/company\/[^/?]+)/)
+        if (match) {
+          console.log('[JHA] Company LinkedIn URL:', match[1])
+          return match[1]
+        }
+      }
+    }
+
+    console.log('[JHA] Company LinkedIn URL not found')
+    return null
+  } catch (e) {
+    console.error('[JHA] extractCompanyLinkedInUrl error:', e)
+    return null
+  }
+}
+
 function extractJobData() {
   try {
     console.log('Job Hunt Autopilot: Starting data extraction...')
@@ -542,6 +576,7 @@ function extractJobData() {
     const result = {
       company_name: companyName,
       company_domain: companyDomain || null,
+      company_linkedin_url: extractCompanyLinkedInUrl(),
       job_title: jobTitle,
       job_url: jobUrl,
       location: location || null,
@@ -562,6 +597,162 @@ function extractJobData() {
   }
 }
 
+function waitForPeoplePageLoad(timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    const start = Date.now()
+
+    function check() {
+      const cards = document.querySelectorAll('a[href*="linkedin.com/in/"]')
+      if (cards.length > 0) {
+        console.log('[JHA] People page loaded, found', cards.length, 'profiles')
+        resolve(true)
+        return
+      }
+      if (Date.now() - start > timeoutMs) {
+        console.log('[JHA] People page timeout — injecting anyway')
+        resolve(false)
+        return
+      }
+      setTimeout(check, 500)
+    }
+    check()
+  })
+}
+
+function injectExtractButton() {
+  if (document.getElementById('jha-extract-btn')) return
+
+  const btn = document.createElement('div')
+  btn.id = 'jha-extract-btn'
+  btn.innerHTML = `
+    <button id="jha-extract-inner" style="
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    ">
+      🎯 Extract HR Contacts
+    </button>
+  `
+  document.body.appendChild(btn)
+  document.getElementById('jha-extract-inner').addEventListener('click', handleExtractClick)
+  console.log('[JHA] Extract HR Contacts button injected')
+}
+
+async function handleExtractClick() {
+  const btn = document.getElementById('jha-extract-inner')
+  btn.textContent = '⏳ Extracting...'
+  btn.disabled = true
+
+  try {
+    console.log('[JHA] Starting HR contact extraction...')
+
+    const profileLinks = document.querySelectorAll('a[href*="linkedin.com/in/"]')
+    const seen = new Set()
+    const profiles = []
+
+    for (const link of profileLinks) {
+      const href = link.href?.split('?')[0]
+      if (!href || seen.has(href)) continue
+      seen.add(href)
+
+      const card = link.closest('li, [class*="card"], [class*="result"], div')
+      if (!card) continue
+
+      const name = link.textContent?.trim() || null
+      if (!name || name.length < 2 || name.length > 80) continue
+
+      const paragraphs = card.querySelectorAll('p, span, div')
+      let title = null
+      for (const p of paragraphs) {
+        const text = p.textContent?.trim()
+        if (!text || text === name || text.length < 5) continue
+        if (text.length < 120) {
+          title = text
+          break
+        }
+      }
+
+      const hrKeywords = ['recruit', 'talent', 'hr ', 'human resources', 'hiring', 'people ops', 'people partner', 'people & culture', 'head of people', 'acquisition']
+      const isRelevant = !title || hrKeywords.some(kw =>
+        title.toLowerCase().includes(kw)
+      )
+
+      if (isRelevant) {
+        profiles.push({ name, title: title || 'Unknown', linkedin_url: href })
+        console.log('[JHA] Found HR profile:', name, '—', title)
+      }
+    }
+
+    console.log('[JHA] Extracted', profiles.length, 'HR profiles')
+
+    if (profiles.length === 0) {
+      btn.textContent = '⚠️ No HR contacts found'
+      btn.style.background = '#f59e0b'
+      return
+    }
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const jobId = urlParams.get('jha_job_id')
+
+    if (!jobId) {
+      btn.textContent = '⚠️ No job ID — open via JHA'
+      btn.style.background = '#f59e0b'
+      return
+    }
+
+    const API_URL = await getApiUrl()
+    const storage = await chrome.storage.sync.get(['extensionToken'])
+    const token = storage.extensionToken
+
+    if (!token) {
+      btn.textContent = '⚠️ Not connected'
+      btn.style.background = '#f59e0b'
+      return
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/jobs/${jobId}/contacts/from-linkedin`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ profiles }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (data.success) {
+      btn.textContent = `✅ Found ${data.data.contacts_saved} contacts!`
+      btn.style.background = '#16a34a'
+    } else {
+      btn.textContent = '❌ Error saving contacts'
+      btn.style.background = '#dc2626'
+    }
+
+  } catch (error) {
+    console.error('[JHA] Extract error:', error)
+    btn.textContent = '❌ Error — try again'
+    btn.style.background = '#dc2626'
+    btn.disabled = false
+  }
+}
+
 // Initialize
 if (isJobPage()) {
   setTimeout(injectCaptureButton, 2000)
@@ -571,6 +762,8 @@ if (isJobPage()) {
     if (isJobPage()) injectCaptureButton()
   })
   observer.observe(document.body, { childList: true, subtree: true })
+} else if (isLinkedInPeoplePage()) {
+  waitForPeoplePageLoad().then(() => injectExtractButton())
 }
 
 // Watch for SPA navigation
@@ -580,5 +773,6 @@ new MutationObserver(() => {
   if (url !== lastUrl) {
     lastUrl = url
     if (isJobPage()) setTimeout(injectCaptureButton, 2000)
+    else if (isLinkedInPeoplePage()) waitForPeoplePageLoad().then(() => injectExtractButton())
   }
 }).observe(document, { subtree: true, childList: true })

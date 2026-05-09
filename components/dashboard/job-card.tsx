@@ -62,8 +62,21 @@ export function JobCard({
 
   async function handleFindContacts() {
     setFindingContacts(true)
+
+    // Fire poster lookup in background — don't block on it
+    const contactsPromise = fetch(`/api/jobs/${job.id}/find-contacts`, { method: 'POST' })
+
+    // Auto-open LinkedIn people page if we have the URL
+    if (job.company_linkedin_url) {
+      const slug = job.company_linkedin_url
+        .replace('https://www.linkedin.com/company/', '')
+        .replace(/\/$/, '')
+      const peopleUrl = `https://www.linkedin.com/company/${slug}/people/?keywords=recruiter+talent+acquisition+HR+hiring&jha_job_id=${job.id}`
+      window.open(peopleUrl, '_blank')
+    }
+
     try {
-      const response = await fetch(`/api/jobs/${job.id}/find-contacts`, { method: 'POST' })
+      const response = await contactsPromise
       const data = await response.json()
       if (data.success) {
         onContactsFound?.(job.id)
@@ -105,6 +118,11 @@ export function JobCard({
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge className={statusColors[job.status]}>{statusLabels[job.status]}</Badge>
+              {!job.company_linkedin_url && (
+                <Badge variant="outline" className="gap-1 text-xs text-amber-600 border-amber-300">
+                  ⚠️ Recapture for HR extraction
+                </Badge>
+              )}
               {job.hr_email && (
                 <Badge variant="outline" className="gap-1 text-xs">
                   <Mail className="h-3 w-3" />

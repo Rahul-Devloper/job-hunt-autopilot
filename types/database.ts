@@ -442,6 +442,7 @@ export type Database = {
         Row: {
           applied_at: string | null
           company_domain: string | null
+          company_linkedin_url: string | null
           company_name: string
           created_at: string | null
           email_source: Database['public']['Enums']['email_source'] | null
@@ -464,6 +465,7 @@ export type Database = {
         Insert: {
           applied_at?: string | null
           company_domain?: string | null
+          company_linkedin_url?: string | null
           company_name: string
           created_at?: string | null
           email_source?: Database['public']['Enums']['email_source'] | null
@@ -486,6 +488,7 @@ export type Database = {
         Update: {
           applied_at?: string | null
           company_domain?: string | null
+          company_linkedin_url?: string | null
           company_name?: string
           created_at?: string | null
           email_source?: Database['public']['Enums']['email_source'] | null
