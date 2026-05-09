@@ -34,10 +34,6 @@ function isJobPage() {
   return window.location.href.includes('linkedin.com/jobs/view/')
 }
 
-function isLinkedInPeoplePage() {
-  return window.location.href.includes('linkedin.com/company/') &&
-         window.location.href.includes('/people/')
-}
 
 function injectCaptureButton() {
   if (document.getElementById('jha-capture-button')) return
@@ -754,7 +750,10 @@ async function handleExtractClick() {
 }
 
 // Initialize
-if (isJobPage()) {
+const currentUrl = window.location.href
+
+if (currentUrl.includes('linkedin.com/jobs/view/')) {
+  console.log('[JHA] Job page detected')
   setTimeout(injectCaptureButton, 2000)
 
   // Watch for DOM changes (LinkedIn is a SPA)
@@ -762,7 +761,9 @@ if (isJobPage()) {
     if (isJobPage()) injectCaptureButton()
   })
   observer.observe(document.body, { childList: true, subtree: true })
-} else if (isLinkedInPeoplePage()) {
+
+} else if (currentUrl.includes('linkedin.com/company/') && currentUrl.includes('/people/')) {
+  console.log('[JHA] LinkedIn people page detected')
   waitForPeoplePageLoad().then(() => injectExtractButton())
 }
 
@@ -772,7 +773,12 @@ new MutationObserver(() => {
   const url = location.href
   if (url !== lastUrl) {
     lastUrl = url
-    if (isJobPage()) setTimeout(injectCaptureButton, 2000)
-    else if (isLinkedInPeoplePage()) waitForPeoplePageLoad().then(() => injectExtractButton())
+    if (url.includes('linkedin.com/jobs/view/')) {
+      console.log('[JHA] SPA nav → job page')
+      setTimeout(injectCaptureButton, 2000)
+    } else if (url.includes('linkedin.com/company/') && url.includes('/people/')) {
+      console.log('[JHA] SPA nav → people page')
+      waitForPeoplePageLoad().then(() => injectExtractButton())
+    }
   }
 }).observe(document, { subtree: true, childList: true })
