@@ -655,48 +655,74 @@ async function handleExtractClick() {
   try {
     console.log('[JHA] Starting HR contact extraction...')
 
-    const profileLinks = document.querySelectorAll('a[href*="linkedin.com/in/"]')
+    const allProfileLinks = document.querySelectorAll('a[href*="linkedin.com/in/"]')
     const seen = new Set()
     const profiles = []
 
-    for (const link of profileLinks) {
+    for (const link of allProfileLinks) {
       const href = link.href?.split('?')[0]
-      if (!href || seen.has(href)) continue
+      if (!href) continue
+
+      // Skip URN-based links (LinkedIn internal IDs — not clean profile slugs)
+      if (href.includes('ACoAA') || href.includes('urn%3A')) continue
+
+      if (seen.has(href)) continue
       seen.add(href)
 
-      const card = link.closest('li, [class*="card"], [class*="result"], div')
-      if (!card) continue
+      // Image links have no text — skip them, only name links have text
+      const name = link.textContent?.trim()
+      if (!name || name.length < 2 || name.length > 80) {
+        console.log('[JHA] Skipping link with no name text:', href)
+        continue
+      }
 
-      const name = link.textContent?.trim() || null
-      if (!name || name.length < 2 || name.length > 80) continue
+      console.log('[JHA] Found profile link:', name, '→', href)
 
-      const paragraphs = card.querySelectorAll('p, span, div')
+      // Walk up to the card container to find the title separately
+      const card = link.closest('li')
+        || link.closest('[class*="org-people-profile-card"]')
+        || link.closest('[class*="artdeco-entity-lockup"]')
+        || link.parentElement?.parentElement
+
       let title = null
-      for (const p of paragraphs) {
-        const text = p.textContent?.trim()
-        if (!text || text === name || text.length < 5) continue
-        if (text.length < 120) {
+      if (card) {
+        const allText = card.querySelectorAll('div, span, p')
+        for (const el of allText) {
+          const text = el.textContent?.trim()
+          if (!text || text === name || text.length < 5 || text.length > 150) continue
+          if (text.includes(name)) continue
           title = text
           break
         }
       }
 
-      const hrKeywords = ['recruit', 'talent', 'hr ', 'human resources', 'hiring', 'people ops', 'people partner', 'people & culture', 'head of people', 'acquisition']
+      console.log('[JHA] Profile:', name, '|', title, '|', href)
+
+      const hrKeywords = [
+        'recruit', 'talent', 'hr ', 'human resource',
+        'hiring', 'people ops', 'people partner',
+        'people & culture', 'head of people', 'acquisition',
+        'people director', 'resourcing',
+      ]
       const isRelevant = !title || hrKeywords.some(kw =>
         title.toLowerCase().includes(kw)
       )
 
       if (isRelevant) {
         profiles.push({ name, title: title || 'Unknown', linkedin_url: href })
-        console.log('[JHA] Found HR profile:', name, '—', title)
+        console.log('[JHA] ✅ Added HR profile:', name, '—', title)
+      } else {
+        console.log('[JHA] ❌ Skipped (not HR):', name, '—', title)
       }
     }
 
-    console.log('[JHA] Extracted', profiles.length, 'HR profiles')
+    console.log('[JHA] Total HR profiles extracted:', profiles.length)
+    console.log('[JHA] Profiles:', JSON.stringify(profiles, null, 2))
 
     if (profiles.length === 0) {
-      btn.textContent = '⚠️ No HR contacts found'
+      btn.textContent = '⚠️ No HR contacts found — try scrolling down first'
       btn.style.background = '#f59e0b'
+      btn.disabled = false
       return
     }
 
@@ -704,8 +730,9 @@ async function handleExtractClick() {
     const jobId = urlParams.get('jha_job_id')
 
     if (!jobId) {
-      btn.textContent = '⚠️ No job ID — open via JHA'
-      btn.style.background = '#f59e0b'
+      btn.textContent = '❌ No job ID — open from JHA'
+      btn.style.background = '#dc2626'
+      btn.disabled = false
       return
     }
 
@@ -716,6 +743,7 @@ async function handleExtractClick() {
     if (!token) {
       btn.textContent = '⚠️ Not connected'
       btn.style.background = '#f59e0b'
+      btn.disabled = false
       return
     }
 
@@ -739,6 +767,7 @@ async function handleExtractClick() {
     } else {
       btn.textContent = '❌ Error saving contacts'
       btn.style.background = '#dc2626'
+      btn.disabled = false
     }
 
   } catch (error) {
