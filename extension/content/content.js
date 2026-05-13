@@ -697,23 +697,21 @@ async function handleExtractClick() {
           if (link.closest('[class*="insight"]')) continue
           if (link.closest('[class*="metadata"]')) continue
 
-          // Image-only link — get name from img alt attribute
-          if (link.querySelector('img') && !link.textContent?.trim()) {
-            const altName = link.querySelector('img')?.alt?.trim()
-            if (altName && altName.length > 2 && altName.length < 80) {
-              profileUrl = href
-              name = altName
-            }
+          // Try text content first (name links), fall back to img alt (image links)
+          let linkName = link.textContent?.trim()
+          if (!linkName || linkName.length < 2) {
+            const img = link.querySelector('img')
+            linkName = img?.alt?.trim() || null
+          }
+          if (!linkName || linkName.length < 2 || linkName.length > 80) {
+            console.log('[JHA] Skipping link with no name:', href)
             continue
           }
 
-          // Text link — this is the name link
-          const linkText = link.textContent?.trim()
-          if (linkText && linkText.length > 2 && linkText.length < 80) {
-            profileUrl = href
-            name = linkText
-            break
-          }
+          console.log('[JHA] Found profile:', linkName, '→', href)
+          profileUrl = href
+          name = linkName
+          break
         }
 
         if (!profileUrl || !name || seen.has(profileUrl)) continue
