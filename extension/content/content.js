@@ -655,108 +655,67 @@ async function handleExtractClick() {
   try {
     console.log('[JHA] Starting HR contact extraction...')
 
-    // STEP 1: Scope to the main people list container — ignore sidebars
-    const peopleListContainer =
-      document.querySelector('.org-people-profiles-module__profile-list') ||
-      document.querySelector('[class*="org-people-profiles-module"]') ||
-      document.querySelector('ul.artdeco-list') ||
-      document.querySelector('.scaffold-finite-scroll__content')
-
-    if (!peopleListContainer) {
-      console.log('[JHA] Could not find people list container')
-      btn.textContent = '⚠️ Could not find people list — try scrolling'
-      btn.style.background = '#f59e0b'
-      btn.disabled = false
-      return
-    }
-
-    console.log('[JHA] Found people container:', peopleListContainer.className)
-
-    // STEP 2: Each person is in a <li> card
-    const personCards = peopleListContainer.querySelectorAll('li.artdeco-list__item')
-    console.log('[JHA] Found', personCards.length, 'person cards')
-
-    const profiles = []
+    const allProfileLinks = document.querySelectorAll('a[href*="linkedin.com/in/"]')
     const seen = new Set()
+    const profiles = []
 
-    for (const card of personCards) {
-      try {
-        // STEP 3: Find this person's profile URL and name
-        const allLinks = card.querySelectorAll('a[href*="linkedin.com/in/"]')
-        let profileUrl = null
-        let name = null
+    for (const link of allProfileLinks) {
+      const href = link.href?.split('?')[0]
+      if (!href) continue
 
-        for (const link of allLinks) {
-          const href = link.href?.split('?')[0]
-          if (!href) continue
+      // Skip URN-based links
+      if (href.includes('ACoAA') || href.includes('urn%3A')) continue
 
-          // Skip URN-based links
-          if (href.match(/\/in\/ACoAA/)) continue
+      if (seen.has(href)) continue
+      seen.add(href)
 
-          // Skip insight / metadata links ("Hassan works here" etc.)
-          if (link.closest('[class*="insight"]')) continue
-          if (link.closest('[class*="metadata"]')) continue
+      // Try text content first, fall back to img alt for image links
+      let name = link.textContent?.trim() || null
+      if (!name || name.length < 2) {
+        name = link.querySelector('img')?.alt?.trim() || null
+      }
 
-          // Try text content first (name links), fall back to img alt (image links)
-          let linkName = link.textContent?.trim()
-          if (!linkName || linkName.length < 2) {
-            const img = link.querySelector('img')
-            linkName = img?.alt?.trim() || null
-          }
-          if (!linkName || linkName.length < 2 || linkName.length > 80) {
-            console.log('[JHA] Skipping link with no name:', href)
-            continue
-          }
+      if (!name || name.length < 2 || name.length > 80) {
+        console.log('[JHA] Skipping — no name found:', href)
+        continue
+      }
 
-          console.log('[JHA] Found profile:', linkName, '→', href)
-          profileUrl = href
-          name = linkName
+      console.log('[JHA] Found:', name, '→', href)
+
+      // Walk up to card for title
+      const card = link.closest('li')
+        || link.closest('[class*="org-people-profile-card"]')
+        || link.closest('[class*="artdeco-entity-lockup"]')
+        || link.parentElement?.parentElement
+
+      let title = null
+      if (card) {
+        const allText = card.querySelectorAll('div, span, p')
+        for (const el of allText) {
+          const text = el.textContent?.trim()
+          if (!text || text === name || text.length < 5 || text.length > 150) continue
+          if (text.includes(name)) continue
+          title = text
           break
         }
+      }
 
-        if (!profileUrl || !name || seen.has(profileUrl)) continue
-        seen.add(profileUrl)
+      console.log('[JHA] Profile:', name, '|', title, '|', href)
 
-        // STEP 4: Find the job title from subtitle elements
-        let title = null
-        const titleSelectors = [
-          '[class*="lockup__subtitle"]',
-          '[class*="entity-lockup__subtitle"]',
-          '[class*="profile-card__subtitle"]',
-          '[class*="artdeco-entity-lockup__subtitle"]',
-        ]
-        for (const selector of titleSelectors) {
-          const el = card.querySelector(selector)
-          const text = el?.textContent?.trim()
-          if (text && text.length > 3 && text !== name) {
-            title = text
-            break
-          }
-        }
+      const hrKeywords = [
+        'recruit', 'talent', 'hr ', 'human resource',
+        'hiring', 'people ops', 'people partner', 'people & culture',
+        'head of people', 'acquisition', 'people director', 'resourcing',
+      ]
+      const isRelevant = !title || hrKeywords.some(kw =>
+        title.toLowerCase().includes(kw)
+      )
 
-        console.log('[JHA] Person found:', name, '|', title, '|', profileUrl)
-
-        // STEP 5: Filter by HR keywords
-        const hrKeywords = [
-          'recruit', 'talent', 'hr ', 'human resource',
-          'hiring', 'people ops', 'people partner',
-          'people & culture', 'head of people',
-          'acquisition', 'people director', 'resourcing',
-          'people lead', 'staffing',
-        ]
-        const isRelevant = !title || hrKeywords.some(kw =>
-          title.toLowerCase().includes(kw)
-        )
-
-        if (isRelevant) {
-          profiles.push({ name, title: title || 'Unknown', linkedin_url: profileUrl })
-          console.log('[JHA] ✅ Added:', name, '—', title)
-        } else {
-          console.log('[JHA] ❌ Skipped (not HR):', name, '—', title)
-        }
-
-      } catch (cardErr) {
-        console.error('[JHA] Error processing card:', cardErr)
+      if (isRelevant) {
+        profiles.push({ name, title: title || 'Unknown', linkedin_url: href })
+        console.log('[JHA] ✅ Added:', name, '—', title)
+      } else {
+        console.log('[JHA] ❌ Skipped (not HR):', name, '—', title)
       }
     }
 
