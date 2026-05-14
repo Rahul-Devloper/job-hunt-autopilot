@@ -693,8 +693,17 @@ async function handleExtractClick() {
         const allText = card.querySelectorAll('div, span, p')
         for (const el of allText) {
           const text = el.textContent?.trim()
-          if (!text || text === name || text.length < 5 || text.length > 150) continue
+          if (!text || text.length < 3) continue
+          if (text === name) continue
           if (text.includes(name)) continue
+          if (text.includes('degree connection') ||
+              text.includes('· 1st') || text.includes('· 2nd') || text.includes('· 3rd') ||
+              text === '1st' || text === '2nd' || text === '3rd') continue
+          if (text === 'Connect' || text === 'Message' ||
+              text === 'Follow' || text === 'Pending') continue
+          if (text.startsWith('Provides services')) continue
+          if (text.includes('followers') || text.includes('connections')) continue
+          if (text.length > 100) continue
           title = text
           break
         }
