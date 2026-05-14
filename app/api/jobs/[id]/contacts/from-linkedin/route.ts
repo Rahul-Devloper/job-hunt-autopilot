@@ -1,8 +1,7 @@
 import { AuthService } from '@/lib/auth/auth-service'
 import { ApiResponseBuilder } from '@/lib/api/api-response'
-import { jobRepository, jobContactRepository } from '@/lib/repositories'
 import { ContactDiscoveryService } from '@/lib/services/contact-discovery-service'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 interface LinkedInProfile {
   name: string
@@ -20,13 +19,23 @@ export async function POST(
     const auth = authHeader
       ? await AuthService.authenticateFromHeader(authHeader)
       : await AuthService.authenticateCookie()
+
     const { profiles }: { profiles: LinkedInProfile[] } = await request.json()
 
     if (!profiles || profiles.length === 0) {
       return ApiResponseBuilder.badRequest('No profiles provided')
     }
 
-    const job = await jobRepository.findById(params.id, auth.userId)
+    // Use service client (bypasses RLS) — required for extension Bearer token requests
+    const supabase = createServiceClient()
+
+    const { data: job } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('id', params.id)
+      .eq('user_id', auth.userId)
+      .single()
+
     if (!job) return ApiResponseBuilder.notFound('Job not found')
 
     const companyDomain = ContactDiscoveryService.extractDomain(
@@ -48,25 +57,31 @@ export async function POST(
         )
 
         if (contact) {
-          const saved = await jobContactRepository.create({
-            job_id: job.id,
-            user_id: auth.userId,
-            email: contact.email,
-            contact_name: contact.name,
-            contact_role: contact.title,
-            contact_source: 'auto',
-            is_primary: savedContacts.length === 0,
-            is_poster: false,
-          })
-          savedContacts.push(saved)
-          console.log(`[LinkedInContacts] Saved: ${contact.name} (${contact.email})`)
+          const { data: saved }: { data: Record<string, unknown> | null } = await supabase
+            .from('job_contacts')
+            .insert({
+              job_id: job.id,
+              user_id: auth.userId,
+              email: contact.email,
+              contact_name: contact.name,
+              contact_role: contact.title,
+              contact_source: 'auto',
+              is_primary: savedContacts.length === 0,
+              is_poster: false,
+            })
+            .select()
+            .single()
+
+          if (saved) {
+            savedContacts.push(saved)
+            console.log(`[LinkedInContacts] Saved: ${contact.name} (${contact.email})`)
+          }
         }
       } catch (err) {
         console.error('[LinkedInContacts] Error processing profile:', err)
       }
     }
 
-    const supabase = await createClient()
     await supabase.from('contact_discovery_logs').insert({
       user_id: auth.userId,
       job_id: job.id,
