@@ -49,7 +49,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
 
       const { data } = await axios.get<GetProspectFinderResponse>(
         'https://api.getprospect.com/v2/email-finder',
-        { params: { full_name: fullName, domain, api_key: apiKey } },
+        { params: { full_name: fullName, domain, api_key: apiKey }, timeout: 5000 },
       )
 
       if (!data.success || !data.data?.email) {
@@ -64,7 +64,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         title: posterTitle || data.data.position || 'Job Poster',
         source: 'getprospect' as const,
         confidence:
-          confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'low',
+          confidence > 80 ? 'high' : confidence > 60 ? 'medium' : 'medium',
         linkedin_url: posterLinkedIn || data.data.linkedin || undefined,
       }
     } catch (error) {
@@ -98,7 +98,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
 
       const { data } = await axios.get<GetProspectInsightResponse>(
         'https://api.getprospect.com/public/v1/insights/contact',
-        { params: { linkedinUrl, api_key: apiKey } },
+        { params: { linkedinUrl, api_key: apiKey }, timeout: 5000 },
       )
 
       if (!data.firstName || !data.lastName || !data.company?.domain) {

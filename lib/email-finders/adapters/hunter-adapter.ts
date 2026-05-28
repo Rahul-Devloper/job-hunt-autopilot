@@ -34,7 +34,7 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
 
       const { data } = await axios.get<HunterResponse>(
         'https://api.hunter.io/v2/domain-search',
-        { params: { domain, api_key: apiKey, limit: 10 } },
+        { params: { domain, api_key: apiKey, limit: 10 }, timeout: 5000 },
       )
 
       const emails: HunterEmail[] = data.data?.emails || []
@@ -86,7 +86,7 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
 
       const { data } = await axios.get<HunterFinderResponse>(
         'https://api.hunter.io/v2/email-finder',
-        { params: { first_name: firstName, last_name: lastName, domain, api_key: apiKey } },
+        { params: { first_name: firstName, last_name: lastName, domain, api_key: apiKey }, timeout: 5000 },
       )
 
       if (!data.data?.email) {

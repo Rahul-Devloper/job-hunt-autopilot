@@ -195,6 +195,19 @@ export class ContactDiscoveryService {
       }
 
       // Strategy 2: Name + domain lookup
+      // Skip if domain looks auto-generated from LinkedIn slug — likely wrong TLD/domain
+      const domainLooksGenerated =
+        companyDomain.includes('-ltd') ||
+        companyDomain.includes('-inc') ||
+        companyDomain.includes('-corp') ||
+        companyDomain.includes('-online') ||
+        companyDomain.includes('-uk')
+
+      if (domainLooksGenerated) {
+        console.log('[ContactDiscovery] Domain looks auto-generated, skipping name lookup:', companyDomain)
+        return null
+      }
+
       if (posterName) {
         const parts = posterName.trim().split(/\s+/)
         if (parts.length >= 2) {

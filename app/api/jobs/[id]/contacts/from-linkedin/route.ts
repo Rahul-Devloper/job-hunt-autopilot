@@ -44,41 +44,59 @@ export async function POST(
 
     console.log(`[LinkedInContacts] Processing ${profiles.length} profiles for job ${job.id}`)
 
+    const LOOKUP_TIMEOUT_MS = 15000
+
+    const lookupResults = await Promise.allSettled(
+      profiles.slice(0, 6).map((profile) =>
+        Promise.race([
+          ContactDiscoveryService.findPosterContact(
+            profile.name,
+            profile.title,
+            profile.linkedin_url,
+            companyDomain || '',
+            auth.userId,
+          ),
+          new Promise<null>((resolve) =>
+            setTimeout(() => {
+              console.log(`[LinkedInContacts] Timeout: ${profile.name}`)
+              resolve(null)
+            }, LOOKUP_TIMEOUT_MS)
+          ),
+        ])
+      )
+    )
+
     const savedContacts = []
+    for (const result of lookupResults) {
+      if (result.status === 'rejected') {
+        console.error('[LinkedInContacts] Lookup failed:', result.reason)
+        continue
+      }
+      const contact = result.value
+      if (!contact) continue
 
-    for (const profile of profiles.slice(0, 6)) {
       try {
-        const contact = await ContactDiscoveryService.findPosterContact(
-          profile.name,
-          profile.title,
-          profile.linkedin_url,
-          companyDomain || '',
-          auth.userId,
-        )
+        const { data: saved }: { data: Record<string, unknown> | null } = await supabase
+          .from('job_contacts')
+          .insert({
+            job_id: job.id,
+            user_id: auth.userId,
+            email: contact.email,
+            contact_name: contact.name,
+            contact_role: contact.title,
+            contact_source: 'auto',
+            is_primary: savedContacts.length === 0,
+            is_poster: false,
+          })
+          .select()
+          .single()
 
-        if (contact) {
-          const { data: saved }: { data: Record<string, unknown> | null } = await supabase
-            .from('job_contacts')
-            .insert({
-              job_id: job.id,
-              user_id: auth.userId,
-              email: contact.email,
-              contact_name: contact.name,
-              contact_role: contact.title,
-              contact_source: 'auto',
-              is_primary: savedContacts.length === 0,
-              is_poster: false,
-            })
-            .select()
-            .single()
-
-          if (saved) {
-            savedContacts.push(saved)
-            console.log(`[LinkedInContacts] Saved: ${contact.name} (${contact.email})`)
-          }
+        if (saved) {
+          savedContacts.push(saved)
+          console.log(`[LinkedInContacts] Saved: ${contact.name} (${contact.email})`)
         }
       } catch (err) {
-        console.error('[LinkedInContacts] Error processing profile:', err)
+        console.error('[LinkedInContacts] Error saving contact:', err)
       }
     }
 
