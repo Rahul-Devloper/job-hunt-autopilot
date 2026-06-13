@@ -26,7 +26,7 @@ export async function POST(
       return ApiResponseBuilder.badRequest('No profiles provided')
     }
 
-    // Use service client (bypasses RLS) — required for extension Bearer token requests
+    // Use service client — bypasses RLS for extension Bearer token requests
     const supabase = createServiceClient()
 
     const { data: job } = await supabase
@@ -38,22 +38,19 @@ export async function POST(
 
     if (!job) return ApiResponseBuilder.notFound('Job not found')
 
-    const companyDomain = ContactDiscoveryService.extractDomain(
-      job.company_domain || job.company_name,
-    )
-
     console.log(`[LinkedInContacts] Processing ${profiles.length} profiles for job ${job.id}`)
 
-    const LOOKUP_TIMEOUT_MS = 15000
+    const LOOKUP_TIMEOUT_MS = 8000
 
+    // Must be awaited — all lookups run in parallel, we wait for all
     const lookupResults = await Promise.allSettled(
-      profiles.slice(0, 6).map((profile) =>
+      profiles.slice(0, 6).map(async (profile: LinkedInProfile) =>
         Promise.race([
-          ContactDiscoveryService.findPosterContact(
+          ContactDiscoveryService.findByNameDirect(
             profile.name,
             profile.title,
             profile.linkedin_url,
-            companyDomain || '',
+            job.company_domain || '',
             auth.userId,
           ),
           new Promise<null>((resolve) =>
@@ -66,13 +63,18 @@ export async function POST(
       )
     )
 
+    console.log('[LinkedInContacts] All lookups complete, processing results...')
+
     const savedContacts = []
+
     for (const result of lookupResults) {
       if (result.status === 'rejected') {
-        console.error('[LinkedInContacts] Lookup failed:', result.reason)
+        console.error('[LinkedInContacts] Lookup rejected:', result.reason)
         continue
       }
+
       const contact = result.value
+      console.log('[LinkedInContacts] Processing result:', contact?.email || 'null')
       if (!contact) continue
 
       try {
@@ -93,12 +95,14 @@ export async function POST(
 
         if (saved) {
           savedContacts.push(saved)
-          console.log(`[LinkedInContacts] Saved: ${contact.name} (${contact.email})`)
+          console.log(`[LinkedInContacts] ✅ Saved: ${contact.name} (${contact.email})`)
         }
       } catch (err) {
-        console.error('[LinkedInContacts] Error saving contact:', err)
+        console.error('[LinkedInContacts] ❌ Save error:', err)
       }
     }
+
+    console.log('[LinkedInContacts] Final saved count:', savedContacts.length)
 
     await supabase.from('contact_discovery_logs').insert({
       user_id: auth.userId,
@@ -115,7 +119,7 @@ export async function POST(
       `✅ Found ${savedContacts.length} HR contact${savedContacts.length !== 1 ? 's' : ''}!`,
     )
   } catch (error) {
-    console.error('[LinkedInContacts] Error:', error)
+    console.error('[LinkedInContacts] Unexpected error:', error)
     return ApiResponseBuilder.fromError(error)
   }
 }

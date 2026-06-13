@@ -244,6 +244,76 @@ export class ContactDiscoveryService {
     }
   }
 
+  /**
+   * Direct name + domain lookup — skips the slow LinkedIn insight API.
+   * Fastest path: GetProspect/Hunter findByName using job.company_domain directly.
+   */
+  static async findByNameDirect(
+    name: string,
+    title: string | null,
+    linkedinUrl: string | null,
+    companyDomain: string,
+    userId: string,
+  ): Promise<Contact | null> {
+    try {
+      const nameParts = name.trim().split(/\s+/)
+      if (nameParts.length < 2) {
+        console.log('[findByNameDirect] Name has less than 2 parts — skipping:', name)
+        return null
+      }
+
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ')
+
+      console.log('[findByNameDirect] Getting providers for user:', userId)
+      const providers = await EmailFinderRepository.getActiveProviders(userId)
+      console.log('[findByNameDirect] Active providers:', providers.map((p) => p.provider))
+
+      type AdapterWithName = {
+        findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
+      }
+
+      for (const { provider } of providers) {
+        console.log('[findByNameDirect] Trying provider:', provider)
+
+        const adapter = getAdapter(provider)
+        const token = await EmailFinderRepository.getValidToken(userId, provider)
+        console.log('[findByNameDirect] Token exists:', !!token, 'for', provider)
+
+        if (!token) {
+          console.log('[findByNameDirect] No token — skipping', provider)
+          continue
+        }
+
+        if (typeof (adapter as unknown as AdapterWithName).findByName !== 'function') {
+          console.log('[findByNameDirect] No findByName method — skipping', provider)
+          continue
+        }
+
+        console.log(`[findByNameDirect] Calling findByName: ${name} @ ${companyDomain} via ${provider}`)
+
+        const contact = await (adapter as unknown as AdapterWithName).findByName(
+          firstName,
+          lastName,
+          companyDomain,
+          token,
+          title,
+          linkedinUrl,
+        )
+
+        console.log(`[findByNameDirect] Result from ${provider}:`, contact?.email || 'null')
+
+        if (contact) return contact
+      }
+
+      console.log('[findByNameDirect] All providers exhausted — no contact found')
+      return null
+    } catch (err) {
+      console.error('[findByNameDirect] Error:', err)
+      return null
+    }
+  }
+
   static extractDomain(companyNameOrUrl: string): string | null {
     try {
       if (companyNameOrUrl.includes('http') || companyNameOrUrl.includes('.com')) {
