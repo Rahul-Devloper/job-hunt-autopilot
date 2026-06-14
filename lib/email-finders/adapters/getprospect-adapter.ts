@@ -46,7 +46,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         }
         errors?: string[]
       }
-      const LOOKUP_TIMEOUT_MS = 10000 // 10 seconds - GetProspect can be slow to respond, especially for less common names/domains
+      const LOOKUP_TIMEOUT_MS = 5000
 
       const { data } = await axios.get<GetProspectFinderResponse>(
         'https://api.getprospect.com/v2/email-finder',
@@ -102,7 +102,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
 
       const { data } = await axios.get<GetProspectInsightResponse>(
         'https://api.getprospect.com/public/v1/insights/contact',
-        { params: { linkedinUrl, api_key: apiKey }, timeout: 5000 },
+        { params: { linkedinUrl, api_key: apiKey }, timeout: 6000 },
       )
 
       if (!data.firstName || !data.lastName || !data.company?.domain) {

@@ -5,8 +5,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 interface LinkedInProfile {
   name: string
-  title: string
-  linkedin_url: string
+  title: string | null
+  linkedin_url: string | null
 }
 
 export async function POST(
@@ -40,43 +40,16 @@ export async function POST(
 
     console.log(`[LinkedInContacts] Processing ${profiles.length} profiles for job ${job.id}`)
 
-    const LOOKUP_TIMEOUT_MS = 8000
-
-    // Must be awaited — all lookups run in parallel, we wait for all
-    const lookupResults = await Promise.allSettled(
-      profiles.slice(0, 6).map(async (profile: LinkedInProfile) =>
-        Promise.race([
-          ContactDiscoveryService.findByNameDirect(
-            profile.name,
-            profile.title,
-            profile.linkedin_url,
-            job.company_domain || '',
-            auth.userId,
-          ),
-          new Promise<null>((resolve) =>
-            setTimeout(() => {
-              console.log(`[LinkedInContacts] Timeout: ${profile.name}`)
-              resolve(null)
-            }, LOOKUP_TIMEOUT_MS)
-          ),
-        ])
-      )
+    // Domain-discovery-once: first profile gets verified domain via findByLinkedIn,
+    // remaining profiles reuse that domain via fast findByName
+    const contacts = await ContactDiscoveryService.findContactsForProfiles(
+      profiles.slice(0, 6),
+      job.company_domain || '',
+      auth.userId,
     )
 
-    console.log('[LinkedInContacts] All lookups complete, processing results...')
-
     const savedContacts = []
-
-    for (const result of lookupResults) {
-      if (result.status === 'rejected') {
-        console.error('[LinkedInContacts] Lookup rejected:', result.reason)
-        continue
-      }
-
-      const contact = result.value
-      console.log('[LinkedInContacts] Processing result:', contact?.email || 'null')
-      if (!contact) continue
-
+    for (const contact of contacts) {
       try {
         const { data: saved }: { data: Record<string, unknown> | null } = await supabase
           .from('job_contacts')
@@ -95,10 +68,23 @@ export async function POST(
 
         if (saved) {
           savedContacts.push(saved)
-          console.log(`[LinkedInContacts] ✅ Saved: ${contact.name} (${contact.email})`)
+          console.log(`[LinkedInContacts] Saved: ${contact.name} (${contact.email})`)
         }
       } catch (err) {
-        console.error('[LinkedInContacts] ❌ Save error:', err)
+        console.error('[LinkedInContacts] Save error:', err)
+      }
+    }
+
+    // Update job.company_domain with verified domain for future lookups
+    if (contacts.length > 0) {
+      const verifiedDomain = contacts[0].email.split('@')[1]
+      if (verifiedDomain && verifiedDomain !== job.company_domain) {
+        await supabase
+          .from('jobs')
+          .update({ company_domain: verifiedDomain })
+          .eq('id', job.id)
+          .eq('user_id', auth.userId)
+        console.log(`[LinkedInContacts] Updated job domain to: ${verifiedDomain}`)
       }
     }
 

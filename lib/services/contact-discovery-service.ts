@@ -314,6 +314,99 @@ export class ContactDiscoveryService {
     }
   }
 
+  /**
+   * Batch lookup for LinkedIn people page profiles.
+   * Discovers the verified company domain ONCE via the first findByLinkedIn,
+   * then reuses it for all remaining profiles via fast findByName.
+   */
+  static async findContactsForProfiles(
+    profiles: Array<{ name: string; title: string | null; linkedin_url: string | null }>,
+    fallbackDomain: string,
+    userId: string,
+  ): Promise<Contact[]> {
+    const providers = await EmailFinderRepository.getActiveProviders(userId)
+    const results: Contact[] = []
+    let verifiedDomain: string | null = null
+
+    type AdapterWithLinkedIn = {
+      findByLinkedIn: (url: string, token: string, title?: string | null) => Promise<Contact | null>
+    }
+    type AdapterWithName = {
+      findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
+    }
+
+    const gpProvider = providers.find((p) => p.provider === 'getprospect')
+
+    // STEP 1: First profile via findByLinkedIn to discover verified domain
+    if (gpProvider && profiles.length > 0 && profiles[0].linkedin_url) {
+      try {
+        const adapter = getAdapter('getprospect')
+        const token = await EmailFinderRepository.getValidToken(userId, 'getprospect')
+
+        if (token && typeof (adapter as unknown as AdapterWithLinkedIn).findByLinkedIn === 'function') {
+          console.log('[BatchLookup] Discovering domain via first profile:', profiles[0].name)
+          const contact = await (adapter as unknown as AdapterWithLinkedIn).findByLinkedIn(
+            profiles[0].linkedin_url,
+            token,
+            profiles[0].title,
+          )
+
+          if (contact) {
+            results.push(contact)
+            verifiedDomain = contact.email.split('@')[1] || null
+            console.log('[BatchLookup] Verified domain discovered:', verifiedDomain)
+          }
+        }
+      } catch (err) {
+        console.error('[BatchLookup] Domain discovery failed:', err)
+      }
+    }
+
+    const domainToUse = verifiedDomain || fallbackDomain
+    console.log('[BatchLookup] Using domain for remaining profiles:', domainToUse)
+
+    // STEP 2: Remaining profiles via fast findByName with the verified domain
+    const remainingProfiles = results.length > 0 ? profiles.slice(1) : profiles
+
+    for (const profile of remainingProfiles) {
+      const nameParts = profile.name.trim().split(/\s+/)
+      if (nameParts.length < 2) continue
+
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ')
+
+      for (const { provider } of providers) {
+        try {
+          const adapter = getAdapter(provider)
+          if (typeof (adapter as unknown as AdapterWithName).findByName !== 'function') continue
+
+          const token = await EmailFinderRepository.getValidToken(userId, provider)
+          if (!token) continue
+
+          console.log(`[BatchLookup] findByName: ${profile.name} @ ${domainToUse} via ${provider}`)
+          const contact = await (adapter as unknown as AdapterWithName).findByName(
+            firstName,
+            lastName,
+            domainToUse,
+            token,
+            profile.title,
+            profile.linkedin_url,
+          )
+
+          if (contact) {
+            results.push(contact)
+            break
+          }
+        } catch (err) {
+          console.error(`[BatchLookup] findByName error for ${provider}:`, err)
+        }
+      }
+    }
+
+    console.log('[BatchLookup] Total contacts found:', results.length)
+    return results
+  }
+
   static extractDomain(companyNameOrUrl: string): string | null {
     try {
       if (companyNameOrUrl.includes('http') || companyNameOrUrl.includes('.com')) {
