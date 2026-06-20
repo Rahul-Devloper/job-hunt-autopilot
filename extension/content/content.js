@@ -647,6 +647,62 @@ function injectExtractButton() {
   console.log('[JHA] Extract HR Contacts button injected')
 }
 
+async function scrapeCompanyDomain() {
+  try {
+    const slug = location.pathname.split('/company/')[1]?.split('/')[0]
+    if (!slug) return null
+
+    const res = await fetch(`https://www.linkedin.com/company/${slug}/about/`)
+    if (!res.ok) {
+      console.log('[JHA] About page fetch failed:', res.status)
+      return null
+    }
+
+    const html = await res.text()
+
+    const allDomains = (html.match(/https?:\/\/(?:www\.)?([a-z0-9-]+\.[a-z]{2,}(?:\.[a-z]{2,})?)/gi) || [])
+      .map(d => d.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, ''))
+      .filter(d =>
+        !d.includes('linkedin') &&
+        !d.includes('licdn') &&
+        !d.includes('w3.org') &&
+        !d.includes('schema.org')
+      )
+
+    const uniqueDomains = [...new Set(allDomains)]
+    if (uniqueDomains.length === 0) return null
+
+    const slugBase = slug
+      .replace(/-(online|ltd|inc|corp|uk|group|limited|llc)$/gi, '')
+      .replace(/-/g, '')
+      .toLowerCase()
+
+    const scored = uniqueDomains.map(d => {
+      const domainName = d.split('.')[0].replace(/-/g, '').toLowerCase()
+      let score = 0
+      if (domainName === slugBase) score = 100
+      else if (domainName.includes(slugBase)) score = 80
+      else if (slugBase.includes(domainName)) score = 60
+      score -= Math.abs(domainName.length - slugBase.length)
+      return { domain: d, score }
+    })
+
+    scored.sort((a, b) => b.score - a.score)
+
+    const best = scored[0]
+    if (best && best.score >= 40) {
+      console.log('[JHA] Verified company domain:', best.domain)
+      return best.domain
+    }
+
+    console.log('[JHA] No confident domain match. Candidates:', uniqueDomains)
+    return null
+  } catch (err) {
+    console.error('[JHA] scrapeCompanyDomain error:', err)
+    return null
+  }
+}
+
 async function handleExtractClick() {
   const btn = document.getElementById('jha-extract-inner')
   btn.textContent = '⏳ Extracting...'
@@ -759,6 +815,10 @@ async function handleExtractClick() {
       return
     }
 
+    console.log('[JHA] Scraping verified company domain...')
+    const verifiedDomain = await scrapeCompanyDomain()
+    console.log('[JHA] Domain to send:', verifiedDomain)
+
     const response = await fetch(
       `${API_URL}/api/jobs/${jobId}/contacts/from-linkedin`,
       {
@@ -767,7 +827,7 @@ async function handleExtractClick() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ profiles }),
+        body: JSON.stringify({ profiles, verified_domain: verifiedDomain }),
       }
     )
 

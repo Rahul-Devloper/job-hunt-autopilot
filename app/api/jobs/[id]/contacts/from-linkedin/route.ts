@@ -20,7 +20,7 @@ export async function POST(
       ? await AuthService.authenticateFromHeader(authHeader)
       : await AuthService.authenticateCookie()
 
-    const { profiles }: { profiles: LinkedInProfile[] } = await request.json()
+    const { profiles, verified_domain }: { profiles: LinkedInProfile[]; verified_domain?: string | null } = await request.json()
 
     if (!profiles || profiles.length === 0) {
       return ApiResponseBuilder.badRequest('No profiles provided')
@@ -38,13 +38,13 @@ export async function POST(
 
     if (!job) return ApiResponseBuilder.notFound('Job not found')
 
+    const domainToUse = verified_domain || job.company_domain || ''
     console.log(`[LinkedInContacts] Processing ${profiles.length} profiles for job ${job.id}`)
+    console.log('[LinkedInContacts] Using domain:', domainToUse, verified_domain ? '(verified)' : '(fallback)')
 
-    // Domain-discovery-once: first profile gets verified domain via findByLinkedIn,
-    // remaining profiles reuse that domain via fast findByName
     const contacts = await ContactDiscoveryService.findContactsForProfiles(
       profiles.slice(0, 6),
-      job.company_domain || '',
+      domainToUse,
       auth.userId,
     )
 
@@ -75,17 +75,14 @@ export async function POST(
       }
     }
 
-    // Update job.company_domain with verified domain for future lookups
-    if (contacts.length > 0) {
-      const verifiedDomain = contacts[0].email.split('@')[1]
-      if (verifiedDomain && verifiedDomain !== job.company_domain) {
-        await supabase
-          .from('jobs')
-          .update({ company_domain: verifiedDomain })
-          .eq('id', job.id)
-          .eq('user_id', auth.userId)
-        console.log(`[LinkedInContacts] Updated job domain to: ${verifiedDomain}`)
-      }
+    // Cache verified_domain (from /about/ page scrape) back to job if new
+    if (verified_domain && verified_domain !== job.company_domain) {
+      await supabase
+        .from('jobs')
+        .update({ company_domain: verified_domain })
+        .eq('id', job.id)
+        .eq('user_id', auth.userId)
+      console.log(`[LinkedInContacts] Cached verified domain to job: ${verified_domain}`)
     }
 
     console.log('[LinkedInContacts] Final saved count:', savedContacts.length)

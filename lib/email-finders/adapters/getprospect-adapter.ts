@@ -46,7 +46,7 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         }
         errors?: string[]
       }
-      const LOOKUP_TIMEOUT_MS = 5000
+      const LOOKUP_TIMEOUT_MS = 4000
 
       const { data } = await axios.get<GetProspectFinderResponse>(
         'https://api.getprospect.com/v2/email-finder',
