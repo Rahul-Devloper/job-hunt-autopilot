@@ -104,7 +104,11 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
         linkedin_url: posterLinkedIn || data.data.linkedin_url || undefined,
       }
     } catch (error) {
-      console.error('[Hunter] findByName error:', error)
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        console.log(`[Hunter] findByName timeout for ${firstName} ${lastName} — skipping`)
+      } else {
+        console.error('[Hunter] findByName error:', error instanceof Error ? error.message : error)
+      }
       return null
     }
   }

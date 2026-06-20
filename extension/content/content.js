@@ -736,6 +736,27 @@ async function handleExtractClick() {
         continue
       }
 
+      // Strip LinkedIn activity suffixes
+      const activitySuffixes = [
+        ' follows this page', ' is hiring', ' shared a post',
+        ' commented on', ' likes this', ' posted', ' reacted to',
+        ' follows you', ' is open to work',
+      ]
+      for (const suffix of activitySuffixes) {
+        const idx = name.toLowerCase().indexOf(suffix.toLowerCase())
+        if (idx > 0) {
+          name = name.substring(0, idx).trim()
+          break
+        }
+      }
+
+      // Skip names still containing activity words
+      const invalidWords = ['follows', 'hiring', 'shared', 'commented', 'posted', 'reacted', 'likes this', 'open to work']
+      if (invalidWords.some(w => name.toLowerCase().includes(w))) {
+        console.log('[JHA] Skipping invalid name:', name)
+        continue
+      }
+
       console.log('[JHA] Found:', name, '→', href)
 
       // Walk up to card for title

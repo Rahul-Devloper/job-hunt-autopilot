@@ -72,7 +72,11 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
         linkedin_url: posterLinkedIn || data.data.linkedin || undefined,
       }
     } catch (error) {
-      console.error('[GetProspect] findByName error:', error)
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        console.log(`[GetProspect] findByName timeout for ${firstName} ${lastName} — skipping`)
+      } else {
+        console.error('[GetProspect] findByName error:', error instanceof Error ? error.message : error)
+      }
       return null
     }
   }
