@@ -26,7 +26,6 @@ interface JobCardProps {
   onManualEmail?: (id: string, existingEmail?: string) => void
   onRemoveEmail?: (id: string) => void
   findingEmail?: string | null
-  onContactsFound?: (jobId: string) => void
 }
 
 const statusColors: Record<string, string> = {
@@ -55,37 +54,29 @@ export function JobCard({
   onManualEmail,
   onRemoveEmail,
   findingEmail,
-  onContactsFound,
 }: JobCardProps) {
   const [contactsOpen, setContactsOpen] = useState(false)
   const [findingContacts, setFindingContacts] = useState(false)
 
   async function handleFindContacts() {
+    if (!job.company_linkedin_url) {
+      alert('No company LinkedIn URL captured. Please recapture this job to enable HR contact extraction.')
+      return
+    }
+
     setFindingContacts(true)
 
-    // Fire poster lookup in background — don't block on it
-    const contactsPromise = fetch(`/api/jobs/${job.id}/find-contacts`, { method: 'POST' })
-
-    // Auto-open LinkedIn people page if we have the URL
-    if (job.company_linkedin_url) {
+    try {
       const slug = job.company_linkedin_url
         .replace('https://www.linkedin.com/company/', '')
         .replace(/\/$/, '')
+
       const peopleUrl = `https://www.linkedin.com/company/${slug}/people/?keywords=recruiter+talent+acquisition+HR+hiring&jha_job_id=${job.id}`
       window.open(peopleUrl, '_blank')
-    }
 
-    try {
-      const response = await contactsPromise
-      const data = await response.json()
-      if (data.success) {
-        onContactsFound?.(job.id)
-        setContactsOpen(true)
-      } else {
-        alert(data.error?.message || 'Failed to find contacts. Make sure API keys are configured in Settings.')
-      }
+      setContactsOpen(true)
     } catch {
-      alert('Error finding contacts')
+      alert('Error opening LinkedIn people page')
     } finally {
       setFindingContacts(false)
     }
@@ -204,7 +195,7 @@ export function JobCard({
                 ) : (
                   <>
                     <Users className="mr-1 h-3 w-3" />
-                    Find Contacts
+                    Find HR Contacts
                   </>
                 )}
               </Button>
