@@ -110,7 +110,7 @@ export const jobContactSchemas = {
     contact_name: z.string().optional(),
     contact_role: z.string().optional(),
     contact_source: z
-      .enum(['linkedin', 'manual', 'company_website', 'referral', 'auto', 'poster'])
+      .enum(['linkedin', 'manual', 'company_website', 'referral', 'auto', 'poster', 'linkedin_people'])
       .optional(),
     notes: z.string().optional(),
     is_primary: z.boolean().optional(),

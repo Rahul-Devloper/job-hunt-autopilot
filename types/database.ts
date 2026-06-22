@@ -105,6 +105,7 @@ export type Database = {
             | 'referral'
             | 'auto'
             | 'poster'
+            | 'linkedin_people'
             | null
           notes: string | null
           is_primary: boolean
@@ -132,6 +133,7 @@ export type Database = {
             | 'referral'
             | 'auto'
             | 'poster'
+            | 'linkedin_people'
             | null
           notes?: string | null
           is_primary?: boolean
@@ -159,6 +161,7 @@ export type Database = {
             | 'referral'
             | 'auto'
             | 'poster'
+            | 'linkedin_people'
             | null
           notes?: string | null
           is_primary?: boolean
