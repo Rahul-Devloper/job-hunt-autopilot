@@ -48,6 +48,15 @@ export async function POST(
       auth.userId,
     )
 
+    // Clear existing linkedin_people contacts for this job to avoid duplicates on re-run
+    await supabase
+      .from('job_contacts')
+      .delete()
+      .eq('job_id', job.id)
+      .eq('user_id', auth.userId)
+      .eq('contact_source', 'linkedin_people')
+    console.log('[LinkedInContacts] Cleared old linkedin_people contacts')
+
     const savedContacts = []
     for (const contact of contacts) {
       try {
@@ -59,7 +68,7 @@ export async function POST(
             email: contact.email,
             contact_name: contact.name,
             contact_role: contact.title,
-            contact_source: 'auto',
+            contact_source: 'linkedin_people',
             is_primary: savedContacts.length === 0,
             is_poster: false,
           })
