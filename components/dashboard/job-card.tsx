@@ -26,6 +26,7 @@ interface JobCardProps {
   onManualEmail?: (id: string, existingEmail?: string) => void
   onRemoveEmail?: (id: string) => void
   findingEmail?: string | null
+  onRefresh?: () => void
 }
 
 const statusColors: Record<string, string> = {
@@ -54,6 +55,7 @@ export function JobCard({
   onManualEmail,
   onRemoveEmail,
   findingEmail,
+  onRefresh,
 }: JobCardProps) {
   const [contactsOpen, setContactsOpen] = useState(false)
   const [findingContacts, setFindingContacts] = useState(false)
@@ -75,6 +77,15 @@ export function JobCard({
       window.open(peopleUrl, '_blank')
 
       setContactsOpen(true)
+
+      // Refresh jobs when user tabs back — extension will have saved contacts by then
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange)
+          onRefresh?.()
+        }
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange)
     } catch {
       alert('Error opening LinkedIn people page')
     } finally {
@@ -195,7 +206,7 @@ export function JobCard({
                 ) : (
                   <>
                     <Users className="mr-1 h-3 w-3" />
-                    Find HR Contacts
+                    Find LinkedIn HR Contacts
                   </>
                 )}
               </Button>

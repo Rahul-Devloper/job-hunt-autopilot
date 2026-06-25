@@ -5,7 +5,6 @@ import { validateExtensionToken } from '@/lib/extension-auth'
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization')
-    console.log('auth header==> ', authHeader)
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -72,7 +71,7 @@ export async function POST(request: Request) {
       .single()
 
     if (jobError) {
-      console.error('Error creating job:', jobError)
+      console.error('[ExtensionCreate] Job insert error:', jobError.message)
       return NextResponse.json(
         { error: 'Failed to create job', details: jobError.message },
         { status: 500 }
@@ -93,7 +92,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response)
   } catch (error: unknown) {
-    console.error('Extension job create error:', error)
+    console.error('[ExtensionCreate] Unexpected error:', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

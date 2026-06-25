@@ -3,28 +3,17 @@ import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ContactDiscoveryService } from '@/lib/services/contact-discovery-service'
 import { jobContactRepository, jobRepository } from '@/lib/repositories'
 import { createClient } from '@/lib/supabase/server'
+import { updateJobStatusOnContactFound } from '@/lib/utils/update-job-status'
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   try {
     const auth = await AuthService.authenticateCookie()
 
     const job = await jobRepository.findById(params.id, auth.userId)
-    if (!job) {
-      return ApiResponseBuilder.notFound('Job not found')
-    }
+    if (!job) return ApiResponseBuilder.notFound('Job not found')
 
-    const supabase = await createClient()
-
-    // Clear existing contacts for this job
-    console.log(`[FindContacts] Clearing existing contacts for job ${job.id}`)
-    const { error: deleteError } = await supabase
-      .from('job_contacts')
-      .delete()
-      .eq('job_id', job.id)
-      .eq('user_id', auth.userId)
-
-    if (deleteError) {
-      console.error('[FindContacts] Error deleting old contacts:', deleteError)
+    if (!job.poster_name && !job.poster_linkedin_url) {
+      return ApiResponseBuilder.error('No poster information captured for this job.')
     }
 
     const companyDomain = ContactDiscoveryService.extractDomain(
@@ -35,122 +24,70 @@ export async function POST(_request: Request, { params }: { params: { id: string
       return ApiResponseBuilder.error(`Could not determine domain for ${job.company_name}`)
     }
 
-    const savedContacts = []
-    let discoveryMethod = 'domain'
-    const providersUsed: string[] = []
-    let totalCredits = 0
+    const supabase = await createClient()
 
-    // ── Step 1: Poster-specific lookup (Hunter email-finder) ──────────────────
-    if (job.poster_name) {
-      console.log(`[FindContacts] Trying poster lookup for: ${job.poster_name}`)
-      try {
-        const posterContact = await ContactDiscoveryService.findPosterContact(
-          job.poster_name ?? null,
-          job.poster_title ?? null,
-          job.poster_linkedin_url ?? null,
-          companyDomain,
-          auth.userId,
-        )
+    console.log(`[FindContacts] Poster lookup: ${job.poster_name ?? job.poster_linkedin_url}`)
+    const posterContact = await ContactDiscoveryService.findPosterContact(
+      job.poster_name ?? null,
+      job.poster_title ?? null,
+      job.poster_linkedin_url ?? null,
+      companyDomain,
+      auth.userId,
+    )
 
-        if (posterContact) {
-          console.log(`[FindContacts] Poster found: ${posterContact.email}`)
-          const saved = await jobContactRepository.create({
-            job_id: job.id,
-            user_id: auth.userId,
-            email: posterContact.email,
-            contact_name: posterContact.name,
-            contact_role: posterContact.title,
-            contact_source: 'poster',
-            is_primary: true,
-            is_poster: true,
-            notes: posterContact.linkedin_url || null,
-          })
-          savedContacts.push(saved)
-          providersUsed.push('hunter')
-          totalCredits += 1
-          discoveryMethod = 'poster'
-        }
-      } catch (err) {
-        console.error('[FindContacts] Poster lookup error (non-fatal):', err)
-      }
+    if (!posterContact) {
+      return ApiResponseBuilder.error('No email found for job poster.')
     }
 
-    // ── Step 2: Domain search for additional contacts ─────────────────────────
-    const contactsNeeded = 4 - savedContacts.length
-    if (contactsNeeded > 0) {
-      console.log(`[FindContacts] Domain search — need ${contactsNeeded} more contacts`)
-      const result = await ContactDiscoveryService.findContactsSmart(
-        job.company_name,
-        companyDomain,
-        job.job_title,
-        auth.userId,
-      )
+    // Clear existing poster contacts to avoid duplicates on re-run
+    await supabase
+      .from('job_contacts')
+      .delete()
+      .eq('job_id', job.id)
+      .eq('user_id', auth.userId)
+      .eq('contact_source', 'poster')
 
-      if (result.contacts.length > 0) {
-        // Deduplicate against poster contact (if any)
-        const existingEmails = new Set(savedContacts.map((c) => c.email.toLowerCase()))
-        const newContacts = result.contacts
-          .filter((c) => !existingEmails.has(c.email.toLowerCase()))
-          .slice(0, contactsNeeded)
+    const saved = await jobContactRepository.create({
+      job_id: job.id,
+      user_id: auth.userId,
+      email: posterContact.email,
+      contact_name: posterContact.name,
+      contact_role: posterContact.title,
+      contact_source: 'poster',
+      is_primary: true,
+      is_poster: true,
+      notes: posterContact.linkedin_url || null,
+    })
 
-        for (const contact of newContacts) {
-          try {
-            const isPrimary = savedContacts.length === 0
-            const saved = await jobContactRepository.create({
-              job_id: job.id,
-              user_id: auth.userId,
-              email: contact.email,
-              contact_name: contact.name,
-              contact_role: contact.title,
-              contact_source: 'auto',
-              is_primary: isPrimary,
-              is_poster: false,
-            })
-            savedContacts.push(saved)
-          } catch (err) {
-            console.error('[FindContacts] Error saving contact:', err)
-          }
-        }
+    // Set hr_email on the job so email badge + Send Email button appear
+    await supabase
+      .from('jobs')
+      .update({
+        hr_email: posterContact.email,
+        email_source: 'hunter',
+        email_type: 'personal',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', job.id)
+      .eq('user_id', auth.userId)
 
-        totalCredits += result.creditsUsed
-        for (const p of result.providers || []) {
-          if (!providersUsed.includes(p)) providersUsed.push(p)
-        }
+    await updateJobStatusOnContactFound(supabase, job.id, auth.userId, job.status)
 
-        if (discoveryMethod === 'poster') {
-          discoveryMethod = 'poster+domain'
-        } else {
-          discoveryMethod = result.method
-        }
-      }
-    }
-
-    if (savedContacts.length === 0) {
-      return ApiResponseBuilder.error('No Relevant contacts found.')
-    }
-
-    // Log discovery attempt
     await supabase.from('contact_discovery_logs').insert({
       user_id: auth.userId,
       job_id: job.id,
-      method: discoveryMethod as 'apollo' | 'hunter' | 'manual' | 'combined' | null,
-      contacts_found: savedContacts.length,
-      credits_used: totalCredits,
+      method: 'combined',
+      contacts_found: 1,
+      credits_used: 1,
       success: true,
-      providers: providersUsed,
+      providers: [posterContact.source],
     })
 
-    const providerText = providersUsed.length ? providersUsed.join(' + ') : discoveryMethod
-    console.log(`[FindContacts] Done — ${savedContacts.length} contacts via ${providerText}`)
+    console.log(`[FindContacts] Poster found: ${posterContact.email}`)
 
     return ApiResponseBuilder.success(
-      {
-        contacts: savedContacts,
-        method: discoveryMethod,
-        credits_used: totalCredits,
-        providers: providersUsed,
-      },
-      `✅ Found ${savedContacts.length} contact${savedContacts.length !== 1 ? 's' : ''} via ${providerText}!`,
+      { contact: saved, email: posterContact.email },
+      `✅ Found poster email: ${posterContact.email}!`,
     )
   } catch (error) {
     console.error('[FindContacts] Unexpected error:', error)

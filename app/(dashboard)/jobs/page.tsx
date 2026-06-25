@@ -72,21 +72,33 @@ export default function JobsPage() {
     const job = jobs.find((j) => j.id === id)
     if (!job) return
 
-    if (!job.company_domain) {
-      alert('Company domain missing. Cannot find email.')
-      return
-    }
-
     setFindingEmail(id)
 
     try {
+      // Step 1: Poster lookup via API keys (real person, highest value)
+      if (job.poster_name || job.poster_linkedin_url) {
+        const posterRes = await fetch(`/api/jobs/${id}/find-contacts`, { method: 'POST' })
+        const posterData = await posterRes.json()
+
+        if (posterData.success) {
+          alert(`Found poster email!\n\nEmail: ${posterData.data.email}`)
+          await fetchJobs()
+          return
+        }
+        // Poster lookup failed — fall through to pattern guessing
+      }
+
+      // Step 2: DNS pattern guessing fallback (no API keys needed)
+      if (!job.company_domain) {
+        alert('No poster data or company domain found. Please add the email manually.')
+        setManualEmailDialog({ open: true, jobId: id, companyName: job.company_name })
+        return
+      }
+
       const response = await fetch('/api/emails/find', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          job_id: id,
-          company_domain: job.company_domain,
-        }),
+        body: JSON.stringify({ job_id: id, company_domain: job.company_domain }),
       })
 
       const data = await response.json()
@@ -99,11 +111,7 @@ export default function JobsPage() {
           `${data.message}\n\nWould you like to add the email manually?`
         )
         if (addManually) {
-          setManualEmailDialog({
-            open: true,
-            jobId: id,
-            companyName: job.company_name,
-          })
+          setManualEmailDialog({ open: true, jobId: id, companyName: job.company_name })
         }
       }
     } catch (error) {
@@ -198,6 +206,7 @@ export default function JobsPage() {
                 onManualEmail={handleManualEmail}
                 onRemoveEmail={handleRemoveEmail}
                 findingEmail={findingEmail}
+                onRefresh={fetchJobs}
               />
             )}
           </TabsContent>

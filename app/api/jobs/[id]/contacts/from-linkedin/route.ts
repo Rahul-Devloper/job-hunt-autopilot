@@ -2,6 +2,7 @@ import { AuthService } from '@/lib/auth/auth-service'
 import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ContactDiscoveryService } from '@/lib/services/contact-discovery-service'
 import { createServiceClient } from '@/lib/supabase/server'
+import { updateJobStatusOnContactFound } from '@/lib/utils/update-job-status'
 
 interface LinkedInProfile {
   name: string
@@ -82,6 +83,10 @@ export async function POST(
       } catch (err) {
         console.error('[LinkedInContacts] Save error:', err)
       }
+    }
+
+    if (savedContacts.length > 0) {
+      await updateJobStatusOnContactFound(supabase, job.id, auth.userId, job.status)
     }
 
     // Cache verified_domain (from /about/ page scrape) back to job if new
