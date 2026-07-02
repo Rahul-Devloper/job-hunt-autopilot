@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Info, X, UserPlus, Send, Loader2 } from 'lucide-react'
+import { Info, X, UserPlus, Send, Loader2, Sparkles } from 'lucide-react'
 import type { Job } from '@/types'
 import type { JobContact } from '@/lib/repositories'
 
@@ -58,6 +58,8 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
   const [subject, setSubject] = useState(`Your Next ${job.job_title}`)
   const [body, setBody] = useState(DEFAULT_TEMPLATE)
   const [sending, setSending] = useState(false)
+  const [generatingDraft, setGeneratingDraft] = useState(false)
+  const [hasDraft, setHasDraft] = useState(false)
 
   // Sender
   const [accounts, setAccounts] = useState<EmailAccount[]>([])
@@ -161,6 +163,33 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
 
   const recipientList = parseRecipients(recipientInput)
   const recipientCount = emailError ? 0 : recipientList.length
+
+  // --- AI draft ---
+
+  async function handleGenerateDraft() {
+    setGeneratingDraft(true)
+    try {
+      const primary = contacts.find((c) => c.is_primary) ?? contacts[0]
+      const response = await fetch('/api/emails/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId: job.id,
+          contactName: primary?.contact_name ?? null,
+          contactRole: primary?.contact_role ?? null,
+        }),
+      })
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error || 'Draft failed')
+      setSubject(data.data.subject)
+      setBody(data.data.body)
+      setHasDraft(true)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to generate draft')
+    } finally {
+      setGeneratingDraft(false)
+    }
+  }
 
   // --- preview ---
 
@@ -365,7 +394,29 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
 
           {/* ── Body ── */}
           <div>
-            <Label htmlFor='body'>Email Body</Label>
+            <div className='flex items-center justify-between mb-1'>
+              <Label htmlFor='body'>Email Body</Label>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='h-7 px-2 text-xs gap-1 text-purple-700 border-purple-300 hover:bg-purple-50'
+                onClick={handleGenerateDraft}
+                disabled={generatingDraft || sending}
+              >
+                {generatingDraft ? (
+                  <>
+                    <Loader2 className='h-3 w-3 animate-spin' />
+                    Drafting...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className='h-3 w-3' />
+                    {hasDraft ? 'Regenerate' : '✨ Generate with AI'}
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id='body'
               rows={7}

@@ -624,6 +624,7 @@ export type Database = {
           hunter_api_key: string | null
           id: string
           linkedin_url: string | null
+          professional_summary: string | null
           updated_at: string | null
           user_id: string
           yahoo_email: string | null
@@ -640,6 +641,7 @@ export type Database = {
           hunter_api_key?: string | null
           id?: string
           linkedin_url?: string | null
+          professional_summary?: string | null
           updated_at?: string | null
           user_id: string
           yahoo_email?: string | null
@@ -656,6 +658,7 @@ export type Database = {
           hunter_api_key?: string | null
           id?: string
           linkedin_url?: string | null
+          professional_summary?: string | null
           updated_at?: string | null
           user_id?: string
           yahoo_email?: string | null

@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmailFinderCard } from '@/components/settings/email-finder-card'
 import { EMAIL_FINDER_PROVIDERS, TOTAL_FREE_CREDITS } from '@/lib/email-finders/providers'
-import { Check, Mail, AlertCircle, Info } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Check, Mail, AlertCircle, Info, Save } from 'lucide-react'
 import type { EmailFinderStatus } from '@/types/email-finders'
 
 export default function SettingsPage() {
@@ -22,10 +23,14 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [finderStatuses, setFinderStatuses] = useState<Record<string, EmailFinderStatus>>({})
+  const [professionalSummary, setProfessionalSummary] = useState('')
+  const [savingSummary, setSavingSummary] = useState(false)
+  const [summarySaved, setSummarySaved] = useState(false)
 
   useEffect(() => {
     checkStatus()
     loadFinderStatuses()
+    loadProfessionalSummary()
 
     function handleMessage(e: MessageEvent) {
       if (e.data?.type === 'gmail_oauth') {
@@ -62,6 +67,32 @@ export default function SettingsPage() {
     }
 
     setLoading(false)
+  }
+
+  async function loadProfessionalSummary() {
+    try {
+      const response = await fetch('/api/settings/profile')
+      const data = await response.json()
+      if (data.success) setProfessionalSummary(data.data.professional_summary)
+    } catch {}
+  }
+
+  async function handleSaveSummary() {
+    setSavingSummary(true)
+    setSummarySaved(false)
+    try {
+      await fetch('/api/settings/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ professional_summary: professionalSummary }),
+      })
+      setSummarySaved(true)
+      setTimeout(() => setSummarySaved(false), 3000)
+    } catch {
+      alert('Failed to save summary')
+    } finally {
+      setSavingSummary(false)
+    }
   }
 
   async function loadFinderStatuses() {
@@ -280,6 +311,41 @@ export default function SettingsPage() {
                   />
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Professional Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Professional Summary</CardTitle>
+              <CardDescription>
+                A tight 3-4 sentence pitch. This is injected into every AI email draft — write it as an elevator pitch, not a full CV.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {summarySaved && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                  <Check className="h-4 w-4 shrink-0" />
+                  Summary saved
+                </div>
+              )}
+              <Textarea
+                rows={5}
+                value={professionalSummary}
+                onChange={(e) => setProfessionalSummary(e.target.value)}
+                placeholder="Full-stack developer with X years of experience in..."
+                className="text-sm"
+              />
+              <Button onClick={handleSaveSummary} disabled={savingSummary} size="sm">
+                {savingSummary ? (
+                  'Saving...'
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Summary
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
 
