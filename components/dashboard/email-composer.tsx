@@ -180,7 +180,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
         }),
       })
       const data = await response.json()
-      if (!data.success) throw new Error(data.error || 'Draft failed')
+      if (!data.success) throw new Error(data.error?.message || data.error || 'Draft failed')
       setSubject(data.data.subject)
       setBody(data.data.body)
       setHasDraft(true)
