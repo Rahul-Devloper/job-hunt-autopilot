@@ -49,7 +49,7 @@ export abstract class BaseRepository<T> {
       const supabase = await this.getClient()
       const { data: created, error } = await supabase
         .from(this.tableName)
-        .insert(data)
+        .insert(data as never)
         .select()
         .single()
 
@@ -64,7 +64,7 @@ export abstract class BaseRepository<T> {
   async update(id: string, data: Partial<T>, userId?: string): Promise<T> {
     try {
       const supabase = await this.getClient()
-      let query = supabase.from(this.tableName).update(data).eq('id', id)
+      let query = supabase.from(this.tableName).update(data as never).eq('id', id)
       if (userId) query = query.eq('user_id', userId)
 
       const { data: updated, error } = await query.select().single()

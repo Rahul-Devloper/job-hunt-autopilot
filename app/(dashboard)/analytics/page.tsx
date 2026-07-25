@@ -230,7 +230,7 @@ export default function AnalyticsPage() {
                     <YAxis />
                     <Tooltip
                       labelFormatter={date =>
-                        new Date(date).toLocaleDateString('en-US', {
+                        new Date(date as string).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
