@@ -1,179 +1,243 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Header } from '@/components/dashboard/header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { EmailFinderCard } from '@/components/settings/email-finder-card'
-import { EMAIL_FINDER_PROVIDERS, TOTAL_FREE_CREDITS } from '@/lib/email-finders/providers'
-import { Textarea } from '@/components/ui/textarea'
-import { Check, Mail, AlertCircle, Info, Save } from 'lucide-react'
-import type { EmailFinderStatus } from '@/types/email-finders'
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Header } from "@/components/dashboard/header";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmailFinderCard } from "@/components/settings/email-finder-card";
+import {
+  EMAIL_FINDER_PROVIDERS,
+  TOTAL_FREE_CREDITS,
+} from "@/lib/email-finders/providers";
+import { Textarea } from "@/components/ui/textarea";
+import { Check, Mail, AlertCircle, Info, Save } from "lucide-react";
+import type { EmailFinderStatus } from "@/types/email-finders";
 
 export default function SettingsPage() {
-  const [gmailConnected, setGmailConnected] = useState(false)
-  const [userEmail, setUserEmail] = useState('')
-  const [yahooEmail, setYahooEmail] = useState('')
-  const [yahooPassword, setYahooPassword] = useState('')
-  const [yahooSaved, setYahooSaved] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [finderStatuses, setFinderStatuses] = useState<Record<string, EmailFinderStatus>>({})
-  const [professionalSummary, setProfessionalSummary] = useState('')
-  const [savingSummary, setSavingSummary] = useState(false)
-  const [summarySaved, setSummarySaved] = useState(false)
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [yahooEmail, setYahooEmail] = useState("");
+  const [yahooPassword, setYahooPassword] = useState("");
+  const [yahooSaved, setYahooSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [finderStatuses, setFinderStatuses] = useState<
+    Record<string, EmailFinderStatus>
+  >({});
+  const [professionalSummary, setProfessionalSummary] = useState("");
+  const [savingSummary, setSavingSummary] = useState(false);
+  const [summarySaved, setSummarySaved] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [contactLine, setContactLine] = useState("");
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsSaved, setDetailsSaved] = useState(false);
 
   useEffect(() => {
-    checkStatus()
-    loadFinderStatuses()
-    loadProfessionalSummary()
+    checkStatus();
+    loadFinderStatuses();
+    loadProfessionalSummary();
 
     function handleMessage(e: MessageEvent) {
-      if (e.data?.type === 'gmail_oauth') {
-        if (e.data.params === 'gmail=connected') {
-          setGmailConnected(true)
+      if (e.data?.type === "gmail_oauth") {
+        if (e.data.params === "gmail=connected") {
+          setGmailConnected(true);
         } else {
-          alert('Gmail connection failed. Please try again.')
+          alert("Gmail connection failed. Please try again.");
         }
       }
     }
 
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  }, [])
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   async function checkStatus() {
-    const supabase = createClient()
+    const supabase = createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (user) {
-      setUserEmail(user.email ?? '')
+      setUserEmail(user.email ?? "");
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: settings } = await (supabase.from('user_settings') as any)
-        .select('gmail_refresh_token')
-        .eq('user_id', user.id)
-        .single() as { data: { gmail_refresh_token: string | null } | null }
+      const { data: settings } = (await (supabase.from("user_settings") as any)
+        .select("gmail_refresh_token")
+        .eq("user_id", user.id)
+        .single()) as { data: { gmail_refresh_token: string | null } | null };
 
       if (settings?.gmail_refresh_token) {
-        setGmailConnected(true)
+        setGmailConnected(true);
       }
     }
 
-    setLoading(false)
+    setLoading(false);
   }
 
   async function loadProfessionalSummary() {
     try {
-      const response = await fetch('/api/settings/profile')
-      const data = await response.json()
-      if (data.success) setProfessionalSummary(data.data.professional_summary)
+      const response = await fetch("/api/settings/profile");
+      const data = await response.json();
+      if (data.success) {
+        setProfessionalSummary(data.data.professional_summary);
+        setFullName(data.data.full_name);
+        setContactLine(data.data.contact_line);
+      }
     } catch {}
   }
 
   async function handleSaveSummary() {
-    setSavingSummary(true)
-    setSummarySaved(false)
+    setSavingSummary(true);
+    setSummarySaved(false);
     try {
-      await fetch('/api/settings/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ professional_summary: professionalSummary }),
-      })
-      setSummarySaved(true)
-      setTimeout(() => setSummarySaved(false), 3000)
+      });
+      setSummarySaved(true);
+      setTimeout(() => setSummarySaved(false), 3000);
     } catch {
-      alert('Failed to save summary')
+      alert("Failed to save summary");
     } finally {
-      setSavingSummary(false)
+      setSavingSummary(false);
+    }
+  }
+
+  async function handleSaveDetails() {
+    setSavingDetails(true);
+    setDetailsSaved(false);
+    try {
+      await fetch("/api/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: fullName,
+          contact_line: contactLine,
+        }),
+      });
+      setDetailsSaved(true);
+      setTimeout(() => setDetailsSaved(false), 3000);
+    } catch {
+      alert("Failed to save details");
+    } finally {
+      setSavingDetails(false);
     }
   }
 
   async function loadFinderStatuses() {
     try {
-      const response = await fetch('/api/settings/email-finders')
-      const data = await response.json()
+      const response = await fetch("/api/settings/email-finders");
+      const data = await response.json();
       if (data.success) {
-        setFinderStatuses(data.data)
+        setFinderStatuses(data.data);
       }
     } catch {}
   }
 
-  async function handleSaveProvider(providerId: string, credentials: Record<string, string>) {
-    const response = await fetch('/api/settings/email-finders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  async function handleSaveProvider(
+    providerId: string,
+    credentials: Record<string, string>,
+  ) {
+    const response = await fetch("/api/settings/email-finders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ provider: providerId, ...credentials }),
-    })
-    const data = await response.json()
-    if (!data.success) throw new Error(data.error?.message || 'Failed to save')
-    await loadFinderStatuses()
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error?.message || "Failed to save");
+    await loadFinderStatuses();
   }
 
   async function handleRemoveProvider(providerId: string) {
-    const response = await fetch(`/api/settings/email-finders/${providerId}`, { method: 'DELETE' })
-    const data = await response.json()
-    if (!data.success) throw new Error(data.error?.message || 'Failed to remove')
-    await loadFinderStatuses()
+    const response = await fetch(`/api/settings/email-finders/${providerId}`, {
+      method: "DELETE",
+    });
+    const data = await response.json();
+    if (!data.success)
+      throw new Error(data.error?.message || "Failed to remove");
+    await loadFinderStatuses();
   }
 
   function handleConnectGmail() {
-    const width = 500
-    const height = 600
-    const left = window.screen.width / 2 - width / 2
-    const top = window.screen.height / 2 - height / 2
-    window.open('/api/auth/gmail', 'Gmail OAuth', `width=${width},height=${height},left=${left},top=${top}`)
+    const width = 500;
+    const height = 600;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    window.open(
+      "/api/auth/gmail",
+      "Gmail OAuth",
+      `width=${width},height=${height},left=${left},top=${top}`,
+    );
   }
 
   async function handleSaveYahoo() {
     if (!yahooEmail || !yahooPassword) {
-      alert('Please enter both email and app password')
-      return
+      alert("Please enter both email and app password");
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
-      const response = await fetch('/api/settings/yahoo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yahoo_email: yahooEmail, yahoo_password: yahooPassword }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Failed to save')
-      setYahooSaved(true)
-      setYahooPassword('')
+      const response = await fetch("/api/settings/yahoo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          yahoo_email: yahooEmail,
+          yahoo_password: yahooPassword,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to save");
+      setYahooSaved(true);
+      setYahooPassword("");
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to save Yahoo credentials')
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to save Yahoo credentials",
+      );
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   }
 
-  const connectedCount = EMAIL_FINDER_PROVIDERS.filter((p) => finderStatuses[p.id]?.connected).length
+  const connectedCount = EMAIL_FINDER_PROVIDERS.filter(
+    (p) => finderStatuses[p.id]?.connected,
+  ).length;
 
   if (loading) {
     return (
       <div className="flex h-full flex-col">
-        <Header title="Settings" description="Configure your account and integrations" />
+        <Header
+          title="Settings"
+          description="Configure your account and integrations"
+        />
         <div className="flex flex-1 items-center justify-center">
           <p className="text-gray-500">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex h-full flex-col">
-      <Header title="Settings" description="Configure your account and integrations" />
+      <Header
+        title="Settings"
+        description="Configure your account and integrations"
+      />
 
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-2xl space-y-6">
-
           {userEmail && (
             <Card>
               <CardHeader>
@@ -192,7 +256,8 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Gmail Integration</CardTitle>
               <CardDescription>
-                Connect your Gmail account to send cold emails directly from the app
+                Connect your Gmail account to send cold emails directly from the
+                app
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -209,7 +274,10 @@ export default function SettingsPage() {
                   </Button>
                   <div className="flex gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
                     <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                    <p>Opens a popup — make sure popups are allowed for this site.</p>
+                    <p>
+                      Opens a popup — make sure popups are allowed for this
+                      site.
+                    </p>
                   </div>
                 </div>
               )}
@@ -228,7 +296,8 @@ export default function SettingsPage() {
               {yahooSaved && (
                 <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
                   <Check className="h-4 w-4 shrink-0" />
-                  Yahoo credentials saved — Yahoo is now your active email provider
+                  Yahoo credentials saved — Yahoo is now your active email
+                  provider
                 </div>
               )}
 
@@ -253,7 +322,7 @@ export default function SettingsPage() {
                   onChange={(e) => setYahooPassword(e.target.value)}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Generate an app password at{' '}
+                  Generate an app password at{" "}
                   <a
                     href="https://login.yahoo.com/account/security"
                     target="_blank"
@@ -267,7 +336,7 @@ export default function SettingsPage() {
               </div>
 
               <Button onClick={handleSaveYahoo} disabled={saving}>
-                {saving ? 'Saving...' : 'Save & Switch to Yahoo'}
+                {saving ? "Saving..." : "Save & Switch to Yahoo"}
               </Button>
             </CardContent>
           </Card>
@@ -277,8 +346,8 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Email Finder Integrations</CardTitle>
               <CardDescription>
-                Connect email finder services to automatically discover hiring contacts.
-                Keys are encrypted before storage.
+                Connect email finder services to automatically discover hiring
+                contacts. Keys are encrypted before storage.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -286,15 +355,20 @@ export default function SettingsPage() {
               <Alert className="bg-blue-50 border-blue-200">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800 text-sm">
-                  <strong>Up to {TOTAL_FREE_CREDITS} free searches/month</strong> when all 3 providers are connected.
+                  <strong>
+                    Up to {TOTAL_FREE_CREDITS} free searches/month
+                  </strong>{" "}
+                  when all 3 providers are connected.
                   {connectedCount > 0 && (
                     <span className="ml-1 text-blue-700">
-                      ({connectedCount} of {EMAIL_FINDER_PROVIDERS.length} connected)
+                      ({connectedCount} of {EMAIL_FINDER_PROVIDERS.length}{" "}
+                      connected)
                     </span>
                   )}
                   <br />
                   <span className="text-xs">
-                    The app tries Snov.io → GetProspect → Hunter.io until 4 contacts are found.
+                    The app tries Snov.io → GetProspect → Hunter.io until 4
+                    contacts are found.
                   </span>
                 </AlertDescription>
               </Alert>
@@ -314,12 +388,67 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* Your Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Details</CardTitle>
+              <CardDescription>
+                Used to sign off AI-drafted emails — so they never end with a
+                [Your Name] placeholder.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {detailsSaved && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                  <Check className="h-4 w-4 shrink-0" />
+                  Details saved
+                </div>
+              )}
+              <div>
+                <Label htmlFor="full-name">Full Name</Label>
+                <Input
+                  id="full-name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Rahul Ramesh"
+                />
+              </div>
+              <div>
+                <Label htmlFor="contact-line">Contact Line</Label>
+                <Input
+                  id="contact-line"
+                  value={contactLine}
+                  onChange={(e) => setContactLine(e.target.value)}
+                  placeholder="linkedin.com/in/rahul2605 | github.com/Rahul-Devloper"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Appended below your name in the email sign-off.
+                </p>
+              </div>
+              <Button
+                onClick={handleSaveDetails}
+                disabled={savingDetails}
+                size="sm"
+              >
+                {savingDetails ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Details
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Professional Summary */}
           <Card>
             <CardHeader>
               <CardTitle>Professional Summary</CardTitle>
               <CardDescription>
-                A tight 3-4 sentence pitch. This is injected into every AI email draft — write it as an elevator pitch, not a full CV.
+                A tight 3-4 sentence pitch. This is injected into every AI email
+                draft — write it as an elevator pitch, not a full CV.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -336,9 +465,13 @@ export default function SettingsPage() {
                 placeholder="Full-stack developer with X years of experience in..."
                 className="text-sm"
               />
-              <Button onClick={handleSaveSummary} disabled={savingSummary} size="sm">
+              <Button
+                onClick={handleSaveSummary}
+                disabled={savingSummary}
+                size="sm"
+              >
                 {savingSummary ? (
-                  'Saving...'
+                  "Saving..."
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
@@ -348,9 +481,8 @@ export default function SettingsPage() {
               </Button>
             </CardContent>
           </Card>
-
         </div>
       </div>
     </div>
-  )
+  );
 }

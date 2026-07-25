@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         .single(),
       supabase
         .from('user_settings')
-        .select('professional_summary')
+        .select('professional_summary, full_name, contact_line')
         .eq('user_id', auth.userId)
         .single(),
     ])
@@ -53,63 +53,73 @@ export async function POST(request: Request) {
 
     const professionalSummary =
       settings?.professional_summary || DEFAULT_SUMMARY
-    const jobDesc = (job.job_description || '').slice(0, 800)
-    const name = contactName || 'Hiring Manager'
+    const jobDesc = (job.job_description || '').slice(0, 1000)
+    const name = contactName || null
     const role = contactRole || 'Hiring Contact'
+    const applicantName =
+      settings?.full_name || (auth.email ? auth.email.split('@')[0] : 'Applicant')
+    const contactLine = settings?.contact_line || ''
 
-    const prompt = `You are drafting a cold outreach email for a job applicant reaching out directly to a hiring contact. Write in a direct, genuine, slightly formal tone. Follow these rules strictly:
+    const prompt = `You are drafting a cold outreach job application email. It must be punchy, skimmable, human, and 100% truthful. A recruiter reads it in 7 seconds — structure for skimming.
 
-STYLE RULES:
-- Open with what the applicant has DONE, not who they are.
-- No filler phrases, no hollow corporate language.
-- Lead with concrete proof points and specifics from their background.
-- If there's an honest gap relative to the role, acknowledge it directly rather than hiding it.
-- Keep it concise — 120-160 words for the body.
-- Clean, professional sign-off.
-- Address the contact by first name only.
-- Always put a space after every period. Never run sentences together.
+═══ TONE ═══
 
-STRUCTURE RULES:
-- Start with a greeting: "Hi [contact's first name],"
-- Blank line, then the opening paragraph.
-- Use 2-3 SHORT paragraphs (2-3 sentences each), separated by blank lines.
-- Sign off on its own lines: "Best regards," then the applicant's first name on the next line.
-- Use actual line breaks (\\n) between paragraphs — the body must read as a properly formatted email, NOT a single block.
+Direct, warm, authentic. Write like a real person, not a cover letter. Natural warmth is good ("really cool", "would love to chat") — but not forced. NO corporate filler. BANNED phrases:
+"I am writing to express my interest", "my background aligns", "deeply resonates", "thrive in fast-paced environments", "I am confident that", "I am a great fit", "passionate about".
 
-Body structure to follow exactly:
-Hi [First Name],
+═══ STRUCTURE (follow exactly) ═══
+Subject: ${job.job_title} - ${applicantName}
 
-[Opening — what the applicant has built, concrete and specific.]
+Hi ${name ? '[contact first name]' : `[${job.company_name}] Team`},
 
-[Middle — why this maps to THIS role at THIS company.]
+[2 sentences: the role you're applying for + a genuine, specific nod to the company's tech or mission. Not generic flattery — something real about them.]
 
-[Brief, honest note on any gap if relevant.]
+[1 line: years of experience + core value proposition.]
 
-Best regards,
-[Applicant first name]
+Here's what I bring:
 
-BANNED PHRASES (never use these — they are hollow filler):
-- "my background aligns" / "my background aligns well with"
-- "I believe my background"
-- "I am writing to express my interest"
-- "I am a good fit" / "I would be a great fit"
-- "I am confident that"
-Replace all of these with direct, concrete statements about what the applicant has actually done.
+[Bullet 1 — a key skill/proof that maps DIRECTLY to a top job requirement]
+[Bullet 2 — same, mapped to another requirement]
+[Bullet 3 — same, mapped to another requirement]
 
-APPLICANT'S PROFESSIONAL SUMMARY:
+[1-sentence sign-off with a light call to action.]
+
+Best,
+${applicantName}
+${contactLine || '(no contact line provided — omit this line entirely, do not print a blank line or placeholder)'}
+
+═══ HONESTY RULES (NON-NEGOTIABLE — violating these is failure) ═══
+
+Use EXACTLY the years of experience in the summary below. Never round up, never inflate.
+Only mention technologies that appear in the applicant's summary below.
+NEVER invent a tech (no Django, no Python, no anything) that isn't listed.
+If the job requires something the applicant lacks, DO NOT claim it.
+Either omit it or acknowledge it honestly in one short line.
+Every bullet must be grounded in the applicant's real, stated experience.
+No embellishment ("high-scale", "enterprise-grade") unless it's literally true.
+
+═══ BULLET RULES ═══
+
+Bullets must be SPECIFIC to this applicant's real work, not generic
+("advocate for clean code" is filler — cut it).
+Map each bullet to an actual requirement from the job description.
+Bold the key phrase in each bullet using markdown (**phrase**).
+
+═══ INPUTS ═══
+Applicant's professional summary (SOURCE OF TRUTH — only use facts from here):
 ${professionalSummary}
 
-JOB DETAILS:
-- Role: ${job.job_title}
-- Company: ${job.company_name}
-- Job description (context): ${jobDesc}
+Applicant name: ${applicantName}
+Contact line (links/phone to append): ${contactLine || '(none)'}
 
-CONTACT:
-- Name: ${name}
-- Role: ${role}
+Job role: ${job.job_title}
+Company: ${job.company_name}
+Job description: ${jobDesc}
 
-TASK:
-Write a personalized cold email from the applicant to this contact about this specific role. Reference the company and role naturally. Make it feel hand-written, not templated.`
+Contact name: ${name || '(none — address the company/team generically)'}
+Contact role: ${role}
+
+Write the email now. Truthful, skimmable, human. Return JSON with "subject" and "body" — put the bullets inside the body string using \\n line breaks and • characters.`
 
     const ai = new GoogleGenAI({ apiKey })
 

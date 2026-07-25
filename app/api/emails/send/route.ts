@@ -78,7 +78,9 @@ export async function POST(request: Request) {
     }
 
     // 5. Build email HTML with tracked LinkedIn signature
-    let emailHtml = validated.body.replace(/\n/g, '<br>')
+    let emailHtml = validated.body
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // markdown bold -> HTML
+      .replace(/\n/g, '<br>')
     const trackedLinks: Record<string, string> = {}
 
     if (settings?.linkedin_url) {

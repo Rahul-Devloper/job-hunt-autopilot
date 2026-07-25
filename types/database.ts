@@ -616,9 +616,11 @@ export type Database = {
         Row: {
           apollo_api_key: string | null
           auto_followup_enabled: boolean | null
+          contact_line: string | null
           created_at: string | null
           email_provider: string | null
           followup_delay_days: number | null
+          full_name: string | null
           gmail_access_token: string | null
           gmail_refresh_token: string | null
           hunter_api_key: string | null
@@ -633,9 +635,11 @@ export type Database = {
         Insert: {
           apollo_api_key?: string | null
           auto_followup_enabled?: boolean | null
+          contact_line?: string | null
           created_at?: string | null
           email_provider?: string | null
           followup_delay_days?: number | null
+          full_name?: string | null
           gmail_access_token?: string | null
           gmail_refresh_token?: string | null
           hunter_api_key?: string | null
@@ -650,9 +654,11 @@ export type Database = {
         Update: {
           apollo_api_key?: string | null
           auto_followup_enabled?: boolean | null
+          contact_line?: string | null
           created_at?: string | null
           email_provider?: string | null
           followup_delay_days?: number | null
+          full_name?: string | null
           gmail_access_token?: string | null
           gmail_refresh_token?: string | null
           hunter_api_key?: string | null
