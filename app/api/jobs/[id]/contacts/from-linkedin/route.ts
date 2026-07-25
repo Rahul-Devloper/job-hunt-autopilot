@@ -86,6 +86,19 @@ export async function POST(
     }
 
     if (savedContacts.length > 0) {
+      // Set hr_email from the primary contact so the email badge + Send Email button appear
+      const primaryContact = savedContacts[0]
+      await supabase
+        .from('jobs')
+        .update({
+          hr_email: primaryContact.email as string,
+          email_source: 'hunter',
+          email_type: 'personal',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', job.id)
+        .eq('user_id', auth.userId)
+
       await updateJobStatusOnContactFound(supabase, job.id, auth.userId, job.status)
     }
 
