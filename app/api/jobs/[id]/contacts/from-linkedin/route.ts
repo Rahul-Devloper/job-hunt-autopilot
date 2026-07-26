@@ -1,8 +1,11 @@
+// NOTE: Uses raw service-role Supabase client instead of the repository layer
+// because this route is called by the Chrome extension (Bearer-token auth, no
+// cookies). See BaseRepository's KNOWN LIMITATION comment for context.
 import { AuthService } from '@/lib/auth/auth-service'
 import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ContactDiscoveryService } from '@/lib/services/contact-discovery-service'
 import { createServiceClient } from '@/lib/supabase/server'
-import { updateJobStatusOnContactFound } from '@/lib/utils/update-job-status'
+import { markJobEmailFound } from '@/lib/utils/update-job-status'
 
 interface LinkedInProfile {
   name: string
@@ -88,18 +91,15 @@ export async function POST(
     if (savedContacts.length > 0) {
       // Set hr_email from the primary contact so the email badge + Send Email button appear
       const primaryContact = savedContacts[0]
-      await supabase
-        .from('jobs')
-        .update({
-          hr_email: primaryContact.email as string,
-          email_source: 'hunter',
-          email_type: 'personal',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', job.id)
-        .eq('user_id', auth.userId)
-
-      await updateJobStatusOnContactFound(supabase, job.id, auth.userId, job.status)
+      await markJobEmailFound(
+        supabase,
+        job.id,
+        auth.userId,
+        job.status,
+        primaryContact.email as string,
+        'hunter',
+        'personal',
+      )
     }
 
     // Cache verified_domain (from /about/ page scrape) back to job if new

@@ -1,30 +1,17 @@
+// NOTE: Uses raw service-role Supabase client instead of the repository layer
+// because this route is called by the Chrome extension (Bearer-token auth, no
+// cookies). See BaseRepository's KNOWN LIMITATION comment for context.
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { validateExtensionToken } from '@/lib/extension-auth'
+import { AuthService } from '@/lib/auth/auth-service'
+import { AuthError } from '@/lib/errors/app-error'
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization')
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Missing or invalid Authorization header' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    const validation = await validateExtensionToken(token)
-
-    if (!validation.valid) {
-      return NextResponse.json(
-        { error: validation.error || 'Invalid token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = validation.userId!
+    const auth = await AuthService.authenticateFromHeader(request.headers.get('Authorization'))
+    const userId = auth.userId
+    const expiresIn = auth.metadata?.expiresIn as number | undefined
+    const expiringSoon = !!auth.metadata?.expiringSoon
 
     const body = await request.json()
     const {
@@ -82,16 +69,19 @@ export async function POST(request: Request) {
 
     const response: Record<string, unknown> = { success: true, job }
 
-    if (validation.expiringSoon) {
+    if (expiringSoon) {
       response.warning = {
-        message: `Your extension token expires in ${validation.expiresIn} day${validation.expiresIn === 1 ? '' : 's'}. Please reconnect from /extension`,
-        expiresIn: validation.expiresIn,
-        severity: validation.expiresIn! <= 3 ? 'urgent' : 'info',
+        message: `Your extension token expires in ${expiresIn} day${expiresIn === 1 ? '' : 's'}. Please reconnect from /extension`,
+        expiresIn,
+        severity: expiresIn! <= 3 ? 'urgent' : 'info',
       }
     }
 
     return NextResponse.json(response)
   } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
     console.error('[ExtensionCreate] Unexpected error:', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -11,6 +11,58 @@ export interface Contact {
   linkedin_url?: string
 }
 
+type AdapterWithLinkedIn = {
+  findByLinkedIn: (url: string, token: string, title?: string | null) => Promise<Contact | null>
+}
+type AdapterWithName = {
+  findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
+}
+
+function splitName(fullName: string): { firstName: string; lastName: string } | null {
+  const parts = fullName.trim().split(/\s+/)
+  if (parts.length < 2) return null
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
+}
+
+/**
+ * Try each active provider's findByName in priority order, returning the first hit.
+ */
+async function tryFindByName(
+  providers: Array<{ provider: EmailFinderProvider }>,
+  userId: string,
+  firstName: string,
+  lastName: string,
+  domain: string,
+  title: string | null,
+  linkedinUrl: string | null,
+  logPrefix: string,
+): Promise<Contact | null> {
+  for (const { provider } of providers) {
+    try {
+      const adapter = getAdapter(provider)
+      if (typeof (adapter as unknown as AdapterWithName).findByName !== 'function') continue
+
+      const token = await EmailFinderRepository.getValidToken(userId, provider)
+      if (!token) continue
+
+      console.log(`${logPrefix} findByName: ${firstName} ${lastName} @ ${domain} via ${provider}`)
+      const contact = await (adapter as unknown as AdapterWithName).findByName(
+        firstName,
+        lastName,
+        domain,
+        token,
+        title,
+        linkedinUrl,
+      )
+
+      if (contact) return contact
+    } catch (err) {
+      console.error(`${logPrefix} findByName error for ${provider}:`, err)
+    }
+  }
+  return null
+}
+
 export class ContactDiscoveryService {
   /**
    * Look up the job poster's email.
@@ -26,13 +78,6 @@ export class ContactDiscoveryService {
   ): Promise<Contact | null> {
     try {
       const providers = await EmailFinderRepository.getActiveProviders(userId)
-
-      type AdapterWithLinkedIn = {
-        findByLinkedIn: (url: string, token: string, title?: string | null) => Promise<Contact | null>
-      }
-      type AdapterWithName = {
-        findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
-      }
 
       // Strategy 1: LinkedIn URL lookup
       if (posterLinkedInUrl) {
@@ -71,31 +116,21 @@ export class ContactDiscoveryService {
         return null
       }
 
-      if (posterName) {
-        const parts = posterName.trim().split(/\s+/)
-        if (parts.length >= 2) {
-          const firstName = parts[0]
-          const lastName = parts.slice(1).join(' ')
-
-          for (const { provider } of providers) {
-            try {
-              const adapter = getAdapter(provider)
-              if (typeof (adapter as unknown as AdapterWithName).findByName !== 'function') continue
-
-              const token = await EmailFinderRepository.getValidToken(userId, provider)
-              if (!token) continue
-
-              console.log(`[ContactDiscovery] Trying name lookup via ${provider}`)
-              const contact = await (adapter as unknown as AdapterWithName).findByName(firstName, lastName, companyDomain, token, posterTitle, posterLinkedInUrl)
-
-              if (contact) {
-                console.log(`[ContactDiscovery] Name lookup success via ${provider}:`, contact.email)
-                return contact
-              }
-            } catch (err) {
-              console.error(`[ContactDiscovery] findByName error for ${provider}:`, err)
-            }
-          }
+      const name = posterName ? splitName(posterName) : null
+      if (name) {
+        const contact = await tryFindByName(
+          providers,
+          userId,
+          name.firstName,
+          name.lastName,
+          companyDomain,
+          posterTitle,
+          posterLinkedInUrl,
+          '[ContactDiscovery]',
+        )
+        if (contact) {
+          console.log('[ContactDiscovery] Name lookup success:', contact.email)
+          return contact
         }
       }
 
@@ -119,41 +154,20 @@ export class ContactDiscoveryService {
     const providers = await EmailFinderRepository.getActiveProviders(userId)
     console.log('[BatchLookup] Looking up', profiles.length, 'profiles using domain:', domain)
 
-    type AdapterWithName = {
-      findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
-    }
-
     const lookupProfile = async (profile: { name: string; title: string | null; linkedin_url: string | null }): Promise<Contact | null> => {
-      const nameParts = profile.name.trim().split(/\s+/)
-      if (nameParts.length < 2) return null
+      const name = splitName(profile.name)
+      if (!name) return null
 
-      const firstName = nameParts[0]
-      const lastName = nameParts.slice(1).join(' ')
-
-      for (const { provider } of providers) {
-        try {
-          const adapter = getAdapter(provider)
-          if (typeof (adapter as unknown as AdapterWithName).findByName !== 'function') continue
-
-          const token = await EmailFinderRepository.getValidToken(userId, provider)
-          if (!token) continue
-
-          console.log(`[BatchLookup] findByName: ${profile.name} @ ${domain} via ${provider}`)
-          const contact = await (adapter as unknown as AdapterWithName).findByName(
-            firstName,
-            lastName,
-            domain,
-            token,
-            profile.title,
-            profile.linkedin_url,
-          )
-
-          if (contact) return contact
-        } catch (err) {
-          console.error(`[BatchLookup] findByName error for ${provider}:`, err)
-        }
-      }
-      return null
+      return tryFindByName(
+        providers,
+        userId,
+        name.firstName,
+        name.lastName,
+        domain,
+        profile.title,
+        profile.linkedin_url,
+        '[BatchLookup]',
+      )
     }
 
     const settled = await Promise.allSettled(profiles.map(lookupProfile))

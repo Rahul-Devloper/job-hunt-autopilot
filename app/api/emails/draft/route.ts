@@ -145,9 +145,6 @@ Write the email now. Sharp, truthful, human. Return JSON with "subject" and "bod
 
       const response = await Promise.race([draftPromise, timeoutPromise])
 
-      // Log full response so we can diagnose issues during testing
-      console.log('[Draft] Full response:', JSON.stringify(response, null, 2))
-
       const candidate = response.candidates?.[0]
       const finishReason = candidate?.finishReason
       console.log('[Draft] finishReason:', finishReason)

@@ -3,7 +3,7 @@ import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ContactDiscoveryService } from '@/lib/services/contact-discovery-service'
 import { jobContactRepository, jobRepository } from '@/lib/repositories'
 import { createClient } from '@/lib/supabase/server'
-import { updateJobStatusOnContactFound } from '@/lib/utils/update-job-status'
+import { markJobEmailFound } from '@/lib/utils/update-job-status'
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   try {
@@ -60,18 +60,15 @@ export async function POST(_request: Request, { params }: { params: { id: string
     })
 
     // Set hr_email on the job so email badge + Send Email button appear
-    await supabase
-      .from('jobs')
-      .update({
-        hr_email: posterContact.email,
-        email_source: 'hunter',
-        email_type: 'personal',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', job.id)
-      .eq('user_id', auth.userId)
-
-    await updateJobStatusOnContactFound(supabase, job.id, auth.userId, job.status)
+    await markJobEmailFound(
+      supabase,
+      job.id,
+      auth.userId,
+      job.status,
+      posterContact.email,
+      'hunter',
+      'personal',
+    )
 
     await supabase.from('contact_discovery_logs').insert({
       user_id: auth.userId,

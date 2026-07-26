@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { BaseEmailFinderAdapter } from './base-adapter'
-import type { Contact } from '@/lib/services/contact-discovery-service'
 import type { AuthResult } from '@/types/email-finders'
 
 export class SnovAdapter extends BaseEmailFinderAdapter {
@@ -54,15 +53,5 @@ export class SnovAdapter extends BaseEmailFinderAdapter {
     client_secret: string
   }): Promise<AuthResult> {
     return this.authenticate(config)
-  }
-
-  async searchByDomain(): Promise<Contact[]> {
-    // Snov.io v2 API requires async polling - skip for now
-    console.warn('[Snov] Domain search not implemented (requires v2 async API)')
-    return []
-  }
-
-  getCreditsUsed(contacts: Contact[]): number {
-    return contacts.length
   }
 }

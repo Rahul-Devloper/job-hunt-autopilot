@@ -16,13 +16,4 @@ export function getAdapter(provider: EmailFinderProvider): EmailFinderAdapter {
   return factory()
 }
 
-export function getAllAdapters(): EmailFinderAdapter[] {
-  return Object.values(ADAPTER_FACTORIES).map((f) => f())
-}
-
-export function hasAdapter(provider: string): provider is EmailFinderProvider {
-  return provider in ADAPTER_FACTORIES
-}
-
-export { SnovAdapter, HunterAdapter, GetProspectAdapter }
 export type { EmailFinderAdapter } from './base-adapter'

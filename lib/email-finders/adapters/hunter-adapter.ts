@@ -11,57 +11,6 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
     return { token: credentials.api_key, expires_at: null }
   }
 
-  async searchByDomain(domain: string, apiKey: string): Promise<Contact[]> {
-    try {
-      console.log('[Hunter] Starting search for:', domain)
-
-      interface HunterEmail {
-        value?: string
-        position?: string
-        first_name?: string
-        last_name?: string
-        confidence?: number
-        linkedin?: string
-      }
-
-      interface HunterResponse {
-        data?: { emails?: HunterEmail[] }
-        errors?: Array<{ details?: string }>
-        message?: string
-      }
-
-      console.log('[Hunter] searchByDomain:', domain)
-
-      const { data } = await axios.get<HunterResponse>(
-        'https://api.hunter.io/v2/domain-search',
-        { params: { domain, api_key: apiKey, limit: 10 }, timeout: 5000 },
-      )
-
-      const emails: HunterEmail[] = data.data?.emails || []
-      console.log('[Hunter] Processing', emails.length, 'emails')
-
-      const contacts = emails
-        .filter((e) => !!e.value && this.isRelevantRole(e.position || ''))
-        .map((e) => ({
-          name: `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown',
-          email: e.value as string,
-          title: e.position || 'Unknown',
-          source: 'hunter' as const,
-          confidence:
-            (e.confidence || 0) > 90 ? ('high' as const)
-            : (e.confidence || 0) > 70 ? ('medium' as const)
-            : ('low' as const),
-          linkedin_url: e.linkedin,
-        }))
-
-      console.log('[Hunter] Filtered to', contacts.length, 'relevant contacts')
-      return contacts
-    } catch (error) {
-      console.error('[Hunter] searchByDomain error:', error)
-      throw error
-    }
-  }
-
   async findByName(
     firstName: string,
     lastName: string,
@@ -111,9 +60,5 @@ export class HunterAdapter extends BaseEmailFinderAdapter {
       }
       return null
     }
-  }
-
-  getCreditsUsed(): number {
-    return 1
   }
 }

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { AuthService } from '@/lib/auth/auth-service'
+import { AuthError } from '@/lib/errors/app-error'
 import { z } from 'zod'
 import dns from 'dns/promises'
 
@@ -110,6 +112,7 @@ async function saveToCommunityDB(
 
 export async function POST(request: Request) {
   try {
+    const auth = await AuthService.authenticateCookie()
     const body = await request.json()
     const { job_id, company_domain } = FindEmailSchema.parse(body)
 
@@ -119,6 +122,7 @@ export async function POST(request: Request) {
       .from('jobs')
       .select('*')
       .eq('id', job_id)
+      .eq('user_id', auth.userId)
       .single()
 
     if (jobError || !job) {
@@ -167,6 +171,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', job_id)
+      .eq('user_id', auth.userId)
 
     if (updateError) {
       console.error('Error updating job:', updateError)
@@ -181,6 +186,10 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.issues },

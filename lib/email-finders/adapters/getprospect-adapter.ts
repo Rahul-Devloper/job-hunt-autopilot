@@ -12,15 +12,6 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
   }
 
   /**
-   * GetProspect does NOT support domain-only search.
-   * Returns empty array — domain search is handled by Hunter only.
-   */
-  async searchByDomain(): Promise<Contact[]> {
-    console.log('[GetProspect] Domain-only search not supported — skipping')
-    return []
-  }
-
-  /**
    * Find a specific person's email by full name + domain.
    * Endpoint: GET /v2/email-finder
    */
@@ -130,9 +121,5 @@ export class GetProspectAdapter extends BaseEmailFinderAdapter {
       console.error('[GetProspect] findByLinkedIn error:', error)
       return null
     }
-  }
-
-  getCreditsUsed(): number {
-    return 1
   }
 }

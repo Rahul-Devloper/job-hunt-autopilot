@@ -3,21 +3,12 @@ import type { EmailFinderProviderInfo } from '@/types/email-finders'
 /**
  * All supported email finder providers.
  * Add new providers here — no database changes needed.
+ *
+ * Snov.io is intentionally omitted — SnovAdapter (lib/email-finders/adapters/
+ * snov-adapter.ts) only implements auth, not findByName()/findByLinkedIn(),
+ * so it can never return a contact. Re-add here once those are built.
  */
 export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [
-  {
-    id: 'snov',
-    name: 'Snov.io',
-    freeCredits: 50,
-    signupUrl: 'https://snov.io/sign-up',
-    docsUrl: 'https://snov.io/api',
-    description: 'Best free tier — 50 credits/month',
-    authType: 'oauth',
-    credentialLabels: {
-      client_id: 'Client ID',
-      client_secret: 'Client Secret',
-    },
-  },
   {
     id: 'getprospect',
     name: 'GetProspect',
@@ -45,7 +36,7 @@ export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [
 ]
 
 /**
- * Total free credits across all providers (50 + 50 + 25 = 125)
+ * Total free credits across all providers (50 + 25 = 75)
  */
 export const TOTAL_FREE_CREDITS = EMAIL_FINDER_PROVIDERS.reduce(
   (sum, p) => sum + p.freeCredits,

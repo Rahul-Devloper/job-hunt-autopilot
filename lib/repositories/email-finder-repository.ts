@@ -213,16 +213,21 @@ export class EmailFinderRepository {
   }
 
   /**
-   * Return active providers sorted by priority: Snov → GetProspect → Hunter
+   * Return active providers sorted by priority: GetProspect → Hunter
+   *
+   * Snov is intentionally excluded — SnovAdapter only implements
+   * authenticate()/refreshAuth(), not findByName()/findByLinkedIn(), so it
+   * can never actually return a contact. Re-enable once those are built.
    */
   static async getActiveProviders(
     userId: string
   ): Promise<Array<{ provider: EmailFinderProvider; config: BaseProviderConfig }>> {
     const all = await this.getProviders(userId)
-    const priority: EmailFinderProvider[] = ['snov', 'getprospect', 'hunter']
+    const priority: EmailFinderProvider[] = ['getprospect', 'hunter']
 
     return Object.entries(all)
-      .filter(([, config]) => {
+      .filter(([provider, config]) => {
+        if (provider === 'snov') return false
         if (!config?.is_active) return false
         if ('api_key' in config) return !!(config as ApiKeyConfig).api_key
         if ('client_id' in config) return !!(config as SnovConfig).client_id && !!(config as SnovConfig).client_secret

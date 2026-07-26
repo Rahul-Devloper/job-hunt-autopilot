@@ -2,6 +2,24 @@ import { createClient } from '@/lib/supabase/server'
 import { RepositoryError, NotFoundError } from '@/lib/errors/app-error'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+/**
+ * BaseRepository — clean data-access layer over Supabase.
+ *
+ * ⚠️ KNOWN LIMITATION (tech debt, v2 refactor):
+ * This repository uses the COOKIE-based client (createClient()) only, which
+ * reads the logged-in user's session from browser cookies. This works for
+ * web-app routes, but NOT for routes called by the Chrome extension, which
+ * authenticate via a Bearer token and have no cookies.
+ *
+ * As a result, extension-facing routes (e.g. app/api/extension/jobs/create,
+ * app/api/jobs/[id]/contacts/from-linkedin) BYPASS this repository and
+ * hand-write raw Supabase calls using createServiceClient() instead. That is
+ * why raw Supabase queries and repository calls coexist in this codebase.
+ *
+ * FUTURE FIX: make getClient() accept an optional service-role flag so
+ * extension routes can use the repository layer too, unifying the two paths.
+ * Deferred — it's a refactor with testing implications, not a bug.
+ */
 export abstract class BaseRepository<T> {
   constructor(protected readonly tableName: string) {}
 

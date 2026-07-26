@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { AuthService } from '@/lib/auth/auth-service'
+import { AuthError } from '@/lib/errors/app-error'
 import { z } from 'zod'
 
 const ManualEmailSchema = z.object({
@@ -12,6 +14,7 @@ const ManualEmailSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const auth = await AuthService.authenticateCookie()
     const body = await request.json()
     const { job_id, hr_email, hr_name, email_type, contribute } = ManualEmailSchema.parse(body)
 
@@ -21,6 +24,7 @@ export async function POST(request: Request) {
       .from('jobs')
       .select('*')
       .eq('id', job_id)
+      .eq('user_id', auth.userId)
       .single()
 
     if (jobError || !job) {
@@ -38,6 +42,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', job_id)
+      .eq('user_id', auth.userId)
 
     if (updateError) {
       return NextResponse.json({ error: 'Failed to update job' }, { status: 500 })
@@ -68,6 +73,10 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.issues },

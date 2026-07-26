@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protect dashboard routes
-  const protectedPaths = ['/dashboard', '/jobs', '/analytics', '/settings', '/community']
+  const protectedPaths = ['/dashboard', '/jobs', '/analytics', '/settings']
   const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p))
   if (isProtected && !user) {
     const loginUrl = new URL('/login', request.url)
@@ -62,7 +62,6 @@ export const config = {
     '/jobs/:path*',
     '/analytics/:path*',
     '/settings/:path*',
-    '/community/:path*',
     '/login',
     '/signup',
     '/api/:path*',
