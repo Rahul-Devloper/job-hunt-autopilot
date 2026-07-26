@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Check, Mail, AlertCircle, Info, Save } from "lucide-react";
 import type { EmailFinderStatus } from "@/types/email-finders";
+import { DEFAULT_BACKGROUND } from "@/lib/default-background";
 
 export default function SettingsPage() {
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -89,7 +90,9 @@ export default function SettingsPage() {
       const response = await fetch("/api/settings/profile");
       const data = await response.json();
       if (data.success) {
-        setProfessionalSummary(data.data.professional_summary);
+        setProfessionalSummary(
+          data.data.professional_summary || DEFAULT_BACKGROUND,
+        );
         setFullName(data.data.full_name);
         setContactLine(data.data.contact_line);
       }
@@ -442,13 +445,14 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Professional Summary */}
+          {/* Background */}
           <Card>
             <CardHeader>
-              <CardTitle>Professional Summary</CardTitle>
+              <CardTitle>Your Background</CardTitle>
               <CardDescription>
-                A tight 3-4 sentence pitch. This is injected into every AI email
-                draft — write it as an elevator pitch, not a full CV.
+                Include your summary, full skills/tech list, and education. The
+                AI only pulls facts from here — list every real technology so
+                it never misses one and never invents one.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -459,11 +463,11 @@ export default function SettingsPage() {
                 </div>
               )}
               <Textarea
-                rows={5}
+                rows={14}
                 value={professionalSummary}
                 onChange={(e) => setProfessionalSummary(e.target.value)}
-                placeholder="Full-stack developer with X years of experience in..."
-                className="text-sm"
+                placeholder="Summary: ...&#10;&#10;Skills & Technologies: ...&#10;&#10;Education: ..."
+                className="text-sm font-mono"
               />
               <Button
                 onClick={handleSaveSummary}

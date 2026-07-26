@@ -3,14 +3,12 @@ import { GoogleGenAI, Type } from '@google/genai'
 import { AuthService } from '@/lib/auth/auth-service'
 import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { createClient } from '@/lib/supabase/server'
-
-const DEFAULT_SUMMARY =
-  'Full-stack developer with 3 years of commercial experience across React, TypeScript, Node.js, Next.js, and PostgreSQL. Built and shipped Job Hunt Autopilot (a live full-stack SaaS with a Chrome extension, OAuth, and multi-provider email integration) and MedTrust (React/Node/MongoDB). MSc in Web & Mobile Development (Distinction). Self-taught transition from mechanical engineering into software. Relocating to India (Bangalore/Chennai/Hyderabad) August 2026.'
+import { DEFAULT_BACKGROUND } from '@/lib/default-background'
 
 export async function POST(request: Request) {
   try {
     const auth = await AuthService.authenticateCookie()
-    const { jobId, contactName, contactRole } = await request.json()
+    const { jobId, contactName } = await request.json()
 
     if (!jobId) {
       return NextResponse.json(
@@ -51,75 +49,67 @@ export async function POST(request: Request) {
       )
     }
 
-    const professionalSummary =
-      settings?.professional_summary || DEFAULT_SUMMARY
-    const jobDesc = (job.job_description || '').slice(0, 1000)
+    const background = settings?.professional_summary || DEFAULT_BACKGROUND
+    const jobDesc = (job.job_description || '').slice(0, 1200)
     const name = contactName || null
-    const role = contactRole || 'Hiring Contact'
     const applicantName =
       settings?.full_name || (auth.email ? auth.email.split('@')[0] : 'Applicant')
     const contactLine = settings?.contact_line || ''
 
-    const prompt = `You are drafting a cold outreach job application email. It must be punchy, skimmable, human, and 100% truthful. A recruiter reads it in 7 seconds — structure for skimming.
+    const prompt = `Draft a cold outreach job application email. Truthful, skimmable, and human.
 
-═══ TONE ═══
+⚠️ TOP PRIORITY — HONESTY (overrides everything below)
+These rules are absolute. If any other instruction conflicts, HONESTY WINS:
+- Use the EXACT years of experience from the background. Never round up, never inflate.
+- Only mention technologies that appear ANYWHERE in the applicant's full background (summary, skills, OR education). Never invent a tech — but DO use any real skill listed, even if it only appears in the skills or education section, not the summary.
+- Only include metrics/numbers that appear in the background. Never invent numbers or scale.
+- Never claim leadership, mentorship, or management the applicant doesn't have.
+- If the job needs something the applicant genuinely lacks (not in ANY section), either omit it or acknowledge it honestly — never fake it. Do NOT apologize for a skill the applicant actually has listed somewhere.
+Every claim must be grounded in the applicant's real, stated background.
 
-Direct, warm, authentic. Write like a real person, not a cover letter. Natural warmth is good ("really cool", "would love to chat") — but not forced. NO corporate filler. BANNED phrases:
-"I am writing to express my interest", "my background aligns", "deeply resonates", "thrive in fast-paced environments", "I am confident that", "I am a great fit", "passionate about".
+TONE
+- Direct, warm, human. Write like a real person, not a cover letter.
+- BANNED filler: "thrive in fast-paced environments", "passionate about", "my background aligns", "I am writing to express my interest", "deeply resonates", "I am confident that", "enterprise-grade" / "high-scale" (unless literally true and stated in the background).
 
-═══ STRUCTURE (follow exactly) ═══
+STRUCTURE (follow exactly)
 Subject: ${job.job_title} - ${applicantName}
 
-Hi ${name ? '[contact first name]' : `[${job.company_name}] Team`},
+Hi ${name ? '[contact first name]' : `${job.company_name} Team`},
 
-[2 sentences: the role you're applying for + a genuine, specific nod to the company's tech or mission. Not generic flattery — something real about them.]
+[1 sentence: the role being applied for.]
+[1 sentence: a genuine, SPECIFIC nod to the company's mission or tech — not generic praise.]
 
-[1 line: years of experience + core value proposition.]
+[1 line: exact years of experience + core value proposition. If experience is below what the role asks, address it confidently and truthfully, referencing only REAL projects.]
 
 Here's what I bring:
+- [Bullet 1: a real skill/proof mapped DIRECTLY to a top job requirement. Bold the key phrase with **markdown**. Include a metric ONLY if it exists in the background.]
+- [Bullet 2: same, mapped to another requirement. Emphasize job-description keywords the applicant GENUINELY has.]
+- [Bullet 3: same, mapped to another requirement. Focus on real impact — what was built and shipped.]
 
-[Bullet 1 — a key skill/proof that maps DIRECTLY to a top job requirement]
-[Bullet 2 — same, mapped to another requirement]
-[Bullet 3 — same, mapped to another requirement]
-
-[1-sentence sign-off with a light call to action.]
+[1 sentence: specific, light call to action.]
 
 Best,
 ${applicantName}
 ${contactLine || '(no contact line provided — omit this line entirely, do not print a blank line or placeholder)'}
 
-═══ HONESTY RULES (NON-NEGOTIABLE — violating these is failure) ═══
+BULLET RULES
+- Each bullet must be specific to the applicant's real work — no generic filler.
+- Map each bullet to an actual requirement in the job description.
+- Prioritize job-description keywords the applicant TRULY has (check ALL sections); never surface a keyword they lack.
 
-Use EXACTLY the years of experience in the summary below. Never round up, never inflate.
-Only mention technologies that appear in the applicant's summary below.
-NEVER invent a tech (no Django, no Python, no anything) that isn't listed.
-If the job requires something the applicant lacks, DO NOT claim it.
-Either omit it or acknowledge it honestly in one short line.
-Every bullet must be grounded in the applicant's real, stated experience.
-No embellishment ("high-scale", "enterprise-grade") unless it's literally true.
+INPUTS
+1. Applicant's full background (SOURCE OF TRUTH — every fact must come from here):
+${background}
 
-═══ BULLET RULES ═══
+2. Applicant name: ${applicantName}
+3. Contact line: ${contactLine || '(none)'}
+4. Job role: ${job.job_title}
+5. Company: ${job.company_name}
+6. Job description: ${jobDesc}
 
-Bullets must be SPECIFIC to this applicant's real work, not generic
-("advocate for clean code" is filler — cut it).
-Map each bullet to an actual requirement from the job description.
-Bold the key phrase in each bullet using markdown (**phrase**).
+${name ? `Contact name: ${name}` : ''}
 
-═══ INPUTS ═══
-Applicant's professional summary (SOURCE OF TRUTH — only use facts from here):
-${professionalSummary}
-
-Applicant name: ${applicantName}
-Contact line (links/phone to append): ${contactLine || '(none)'}
-
-Job role: ${job.job_title}
-Company: ${job.company_name}
-Job description: ${jobDesc}
-
-Contact name: ${name || '(none — address the company/team generically)'}
-Contact role: ${role}
-
-Write the email now. Truthful, skimmable, human. Return JSON with "subject" and "body" — put the bullets inside the body string using \\n line breaks and • characters.`
+Write the email now. Sharp, truthful, human. Return JSON with "subject" and "body" — put the bullets inside the body string using \\n line breaks and • characters.`
 
     const ai = new GoogleGenAI({ apiKey })
 
