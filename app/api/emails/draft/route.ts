@@ -69,14 +69,15 @@ export async function POST(request: Request) {
 These rules are absolute. If any other instruction conflicts, HONESTY WINS:
 - Use the EXACT years of experience from the background. Never round up, never inflate.
 - Only mention technologies that appear ANYWHERE in the applicant's full background (summary, skills, OR education). Never invent a tech — but DO use any real skill listed, even if it only appears in the skills or education section, not the summary.
-- Only include metrics/numbers that appear in the background. Never invent numbers or scale.
+- METRICS — CRITICAL: Only use numbers, percentages, or scale figures that appear VERBATIM in the applicant's background. NEVER invent a metric to sound impressive. Do not write '20% improvement', 'thousands of users', 'X daily transactions', or ANY number unless it is explicitly stated in the background. If no metrics exist, describe the real work plainly WITHOUT numbers. An honest description with no metrics is REQUIRED over an impressive one with invented metrics.
 - Never claim leadership, mentorship, or management the applicant doesn't have.
 - If the job needs something the applicant genuinely lacks (not in ANY section), either omit it or acknowledge it honestly — never fake it. Do NOT apologize for a skill the applicant actually has listed somewhere.
 Every claim must be grounded in the applicant's real, stated background.
 
 TONE
 - Direct, warm, human. Write like a real person, not a cover letter.
-- BANNED filler: "thrive in fast-paced environments", "passionate about", "my background aligns", "I am writing to express my interest", "deeply resonates", "I am confident that", "enterprise-grade" / "high-scale" (unless literally true and stated in the background).
+- BANNED filler: "thrive in fast-paced environments", "passionate about", "my background aligns", "I am writing to express my interest", "deeply resonates", "I am confident that", "enterprise-grade" / "high-scale" (unless literally true and stated in the background), "I'm particularly drawn to [Company]'s mission of..." (and any "drawn to your mission" variant), "I enjoy owning features end-to-end", "showcasing my ability to...", "demonstrating my ability to...", "architect solutions" / "architecting solutions", "leveraging" / "utilizing" (use "using").
+- The opening must be specific and human — reference something concrete about the role or company, NOT a templated "I'm drawn to your mission of [tagline]" line. Write how a real engineer would actually open a message.
 
 STRUCTURE (follow exactly)
 Subject: ${job.job_title} - ${applicantName}
@@ -103,6 +104,7 @@ BULLET RULES
 - Each bullet must be specific to the applicant's real work — no generic filler.
 - Map each bullet to an actual requirement in the job description.
 - Prioritize job-description keywords the applicant TRULY has (check ALL sections); never surface a keyword they lack.
+- Bullets should describe what was built and its purpose, not just list sub-features. Avoid spec-sheet dumps ("with OAuth, multi-provider email, and X dashboard"). Focus on the substance of the work.
 
 INPUTS
 1. Applicant's full background (SOURCE OF TRUTH — every fact must come from here):
