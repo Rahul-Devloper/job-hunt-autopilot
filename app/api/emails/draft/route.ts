@@ -3,7 +3,6 @@ import { GoogleGenAI, Type } from '@google/genai'
 import { AuthService } from '@/lib/auth/auth-service'
 import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { createClient } from '@/lib/supabase/server'
-import { DEFAULT_BACKGROUND } from '@/lib/default-background'
 
 export async function POST(request: Request) {
   try {
@@ -49,7 +48,15 @@ export async function POST(request: Request) {
       )
     }
 
-    const background = settings?.professional_summary || DEFAULT_BACKGROUND
+    const background = settings?.professional_summary?.trim()
+    if (!background) {
+      return ApiResponseBuilder.error(
+        'Add your background in Settings first to generate AI drafts',
+        'BACKGROUND_MISSING',
+        400,
+      )
+    }
+
     const jobDesc = (job.job_description || '').slice(0, 1200)
     const name = contactName || null
     const applicantName =

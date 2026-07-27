@@ -20,17 +20,17 @@ import {
   TOTAL_FREE_CREDITS,
 } from "@/lib/email-finders/providers";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Mail, AlertCircle, Info, Save } from "lucide-react";
+import { Check, Info, Save } from "lucide-react";
 import type { EmailFinderStatus } from "@/types/email-finders";
-import { DEFAULT_BACKGROUND } from "@/lib/default-background";
+
+const BACKGROUND_PLACEHOLDER = `Summary: [2-3 sentences about your experience — years, core stack, and a standout project you built.]
+
+Skills & Technologies: [List every language, framework, database, and tool you know — e.g. React, TypeScript, Node.js, PostgreSQL, Docker.]
+
+Education: [Your degree(s), institution, and any distinction.]`;
 
 export default function SettingsPage() {
-  const [gmailConnected, setGmailConnected] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [yahooEmail, setYahooEmail] = useState("");
-  const [yahooPassword, setYahooPassword] = useState("");
-  const [yahooSaved, setYahooSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [finderStatuses, setFinderStatuses] = useState<
     Record<string, EmailFinderStatus>
@@ -47,19 +47,6 @@ export default function SettingsPage() {
     checkStatus();
     loadFinderStatuses();
     loadProfessionalSummary();
-
-    function handleMessage(e: MessageEvent) {
-      if (e.data?.type === "gmail_oauth") {
-        if (e.data.params === "gmail=connected") {
-          setGmailConnected(true);
-        } else {
-          alert("Gmail connection failed. Please try again.");
-        }
-      }
-    }
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   async function checkStatus() {
@@ -70,16 +57,6 @@ export default function SettingsPage() {
 
     if (user) {
       setUserEmail(user.email ?? "");
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: settings } = (await (supabase.from("user_settings") as any)
-        .select("gmail_refresh_token")
-        .eq("user_id", user.id)
-        .single()) as { data: { gmail_refresh_token: string | null } | null };
-
-      if (settings?.gmail_refresh_token) {
-        setGmailConnected(true);
-      }
     }
 
     setLoading(false);
@@ -90,9 +67,7 @@ export default function SettingsPage() {
       const response = await fetch("/api/settings/profile");
       const data = await response.json();
       if (data.success) {
-        setProfessionalSummary(
-          data.data.professional_summary || DEFAULT_BACKGROUND,
-        );
+        setProfessionalSummary(data.data.professional_summary || "");
         setFullName(data.data.full_name);
         setContactLine(data.data.contact_line);
       }
@@ -172,48 +147,6 @@ export default function SettingsPage() {
     await loadFinderStatuses();
   }
 
-  function handleConnectGmail() {
-    const width = 500;
-    const height = 600;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-    window.open(
-      "/api/auth/gmail",
-      "Gmail OAuth",
-      `width=${width},height=${height},left=${left},top=${top}`,
-    );
-  }
-
-  async function handleSaveYahoo() {
-    if (!yahooEmail || !yahooPassword) {
-      alert("Please enter both email and app password");
-      return;
-    }
-    setSaving(true);
-    try {
-      const response = await fetch("/api/settings/yahoo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          yahoo_email: yahooEmail,
-          yahoo_password: yahooPassword,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to save");
-      setYahooSaved(true);
-      setYahooPassword("");
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to save Yahoo credentials",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const connectedCount = EMAIL_FINDER_PROVIDERS.filter(
     (p) => finderStatuses[p.id]?.connected,
   ).length;
@@ -253,96 +186,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           )}
-
-          {/* Gmail */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Gmail Integration</CardTitle>
-              <CardDescription>
-                Connect your Gmail account to send cold emails directly from the
-                app
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {gmailConnected ? (
-                <div className="flex items-center gap-2 text-green-600">
-                  <Check className="h-5 w-5" />
-                  <span className="font-medium">Gmail Connected</span>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Button onClick={handleConnectGmail}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Connect Gmail
-                  </Button>
-                  <div className="flex gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
-                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                    <p>
-                      Opens a popup — make sure popups are allowed for this
-                      site.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Yahoo */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Yahoo Email Integration</CardTitle>
-              <CardDescription>
-                Send emails via Yahoo SMTP using an app-specific password
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {yahooSaved && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
-                  <Check className="h-4 w-4 shrink-0" />
-                  Yahoo credentials saved — Yahoo is now your active email
-                  provider
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="yahoo-email">Yahoo Email</Label>
-                <Input
-                  id="yahoo-email"
-                  type="email"
-                  placeholder="you@yahoo.com"
-                  value={yahooEmail}
-                  onChange={(e) => setYahooEmail(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="yahoo-password">App Password</Label>
-                <Input
-                  id="yahoo-password"
-                  type="password"
-                  placeholder="16-character app password"
-                  value={yahooPassword}
-                  onChange={(e) => setYahooPassword(e.target.value)}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Generate an app password at{" "}
-                  <a
-                    href="https://login.yahoo.com/account/security"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Yahoo Account Security
-                  </a>
-                  . Requires 2FA to be enabled on your Yahoo account.
-                </p>
-              </div>
-
-              <Button onClick={handleSaveYahoo} disabled={saving}>
-                {saving ? "Saving..." : "Save & Switch to Yahoo"}
-              </Button>
-            </CardContent>
-          </Card>
 
           {/* Email Finder Marketplace */}
           <Card>
@@ -413,7 +256,7 @@ export default function SettingsPage() {
                   id="full-name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Rahul Ramesh"
+                  placeholder="John Doe"
                 />
               </div>
               <div>
@@ -422,7 +265,7 @@ export default function SettingsPage() {
                   id="contact-line"
                   value={contactLine}
                   onChange={(e) => setContactLine(e.target.value)}
-                  placeholder="linkedin.com/in/rahul2605 | github.com/Rahul-Devloper"
+                  placeholder="linkedin.com/in/johndoe | github.com/John-Doe"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Appended below your name in the email sign-off.
@@ -451,8 +294,8 @@ export default function SettingsPage() {
               <CardTitle>Your Background</CardTitle>
               <CardDescription>
                 Include your summary, full skills/tech list, and education. The
-                AI only pulls facts from here — list every real technology so
-                it never misses one and never invents one.
+                AI only pulls facts from here — list every real technology so it
+                never misses one and never invents one.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -466,7 +309,7 @@ export default function SettingsPage() {
                 rows={14}
                 value={professionalSummary}
                 onChange={(e) => setProfessionalSummary(e.target.value)}
-                placeholder="Summary: ...&#10;&#10;Skills & Technologies: ...&#10;&#10;Education: ..."
+                placeholder={BACKGROUND_PLACEHOLDER}
                 className="text-sm font-mono"
               />
               <Button
