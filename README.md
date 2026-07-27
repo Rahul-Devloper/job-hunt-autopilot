@@ -42,6 +42,10 @@ cp .env.example .env.local
 
 Fill in your Supabase credentials in `.env.local`
 
+The database schema is tracked as Supabase CLI migrations under
+`supabase/migrations/` — see [MIGRATIONS.md](MIGRATIONS.md) for how to make
+and apply schema changes.
+
 ### 3. Run Development Server
 
 ```bash
