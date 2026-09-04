@@ -22,9 +22,31 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Info, X, UserPlus, Send, Loader2, Sparkles } from 'lucide-react'
+import { Info, X, UserPlus, Send, Loader2, Sparkles, Upload, FileText, Undo2, AlertTriangle } from 'lucide-react'
 import type { Job } from '@/types'
-import type { JobContact } from '@/lib/repositories'
+import type { JobContact, UserDocument } from '@/lib/repositories'
+
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_ATTACHMENT_EXTENSIONS = ['.pdf', '.doc', '.docx']
+
+function validateAttachment(file: File): string | null {
+  const lowerName = file.name.toLowerCase()
+  const hasAllowedExtension = ALLOWED_ATTACHMENT_EXTENSIONS.some((ext) =>
+    lowerName.endsWith(ext)
+  )
+  if (!hasAllowedExtension) {
+    return 'Only PDF or DOCX files are allowed'
+  }
+  if (file.size > MAX_ATTACHMENT_SIZE) {
+    return 'File is too large. Maximum size is 10MB.'
+  }
+  return null
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 interface EmailComposerProps {
   open: boolean
@@ -70,10 +92,29 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
   const [recipientInput, setRecipientInput] = useState(job.hr_email || '')
   const [emailError, setEmailError] = useState('')
 
+  // Attachments
+  const [defaultResume, setDefaultResume] = useState<UserDocument | null>(null)
+  const [defaultCoverLetter, setDefaultCoverLetter] = useState<UserDocument | null>(null)
+  const [overrideAttachments, setOverrideAttachments] = useState(false)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [coverLetterFile, setCoverLetterFile] = useState<File | null>(null)
+  const [resumeFileError, setResumeFileError] = useState('')
+  const [coverLetterFileError, setCoverLetterFileError] = useState('')
+  const [attachmentsSubmitError, setAttachmentsSubmitError] = useState('')
+
   useEffect(() => {
     if (open) {
       loadEmailAccounts()
       loadContacts()
+      loadDefaultDocuments()
+    } else {
+      // Reset the one-time override when the composer closes without sending
+      setOverrideAttachments(false)
+      setResumeFile(null)
+      setCoverLetterFile(null)
+      setResumeFileError('')
+      setCoverLetterFileError('')
+      setAttachmentsSubmitError('')
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -89,6 +130,22 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
       }
     } catch {
       console.error('Failed to load email accounts')
+    }
+  }
+
+  async function loadDefaultDocuments() {
+    try {
+      const response = await fetch('/api/documents')
+      const data = await response.json()
+      if (data.success) {
+        const docs: UserDocument[] = data.data || []
+        setDefaultResume(docs.find((d) => d.document_type === 'cv' && d.is_master) ?? null)
+        setDefaultCoverLetter(
+          docs.find((d) => d.document_type === 'cover_letter' && d.is_master) ?? null
+        )
+      }
+    } catch {
+      console.error('Failed to load default documents')
     }
   }
 
@@ -191,6 +248,55 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
     }
   }
 
+  // --- attachments ---
+
+  function enableOverride() {
+    setOverrideAttachments(true)
+    setAttachmentsSubmitError('')
+  }
+
+  function revertToDefaults() {
+    setOverrideAttachments(false)
+    setResumeFile(null)
+    setCoverLetterFile(null)
+    setResumeFileError('')
+    setCoverLetterFileError('')
+    setAttachmentsSubmitError('')
+  }
+
+  function handleResumeFileChange(file: File | null) {
+    setAttachmentsSubmitError('')
+    if (!file) {
+      setResumeFile(null)
+      setResumeFileError('')
+      return
+    }
+    const error = validateAttachment(file)
+    if (error) {
+      setResumeFileError(error)
+      setResumeFile(null)
+      return
+    }
+    setResumeFileError('')
+    setResumeFile(file)
+  }
+
+  function handleCoverLetterFileChange(file: File | null) {
+    if (!file) {
+      setCoverLetterFile(null)
+      setCoverLetterFileError('')
+      return
+    }
+    const error = validateAttachment(file)
+    if (error) {
+      setCoverLetterFileError(error)
+      setCoverLetterFile(null)
+      return
+    }
+    setCoverLetterFileError('')
+    setCoverLetterFile(file)
+  }
+
   // --- preview ---
 
   const primaryContact = contacts.find((c) => c.is_primary)
@@ -210,20 +316,43 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
       alert('Please select an email account to send from.')
       return
     }
+    if (overrideAttachments && !resumeFile) {
+      setAttachmentsSubmitError(
+        'Add a resume or switch back to your default documents'
+      )
+      return
+    }
 
     setSending(true)
     try {
-      const response = await fetch('/api/emails/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          job_id: job.id,
-          to: recipientInput,      // comma-separated string; schema parses it
-          subject,
-          body: previewBody,
-          account_id: selectedAccount,
-        }),
-      })
+      const fields = {
+        job_id: job.id,
+        to: recipientInput,      // comma-separated string; schema parses it
+        subject,
+        body: previewBody,
+        account_id: selectedAccount,
+      }
+
+      let response: Response
+      if (overrideAttachments) {
+        const formData = new FormData()
+        for (const [key, value] of Object.entries(fields)) {
+          formData.append(key, value)
+        }
+        if (resumeFile) formData.append('resume', resumeFile)
+        if (coverLetterFile) formData.append('cover_letter', coverLetterFile)
+
+        response = await fetch('/api/emails/send', {
+          method: 'POST',
+          body: formData,
+        })
+      } else {
+        response = await fetch('/api/emails/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fields),
+        })
+      }
 
       const data = await response.json()
 
@@ -243,7 +372,12 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
     }
   }
 
-  const canSend = !sending && !!selectedAccount && recipientList.length > 0 && !emailError
+  const canSend =
+    !sending &&
+    !!selectedAccount &&
+    recipientList.length > 0 &&
+    !emailError &&
+    !(overrideAttachments && (!!resumeFileError || !!coverLetterFileError))
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -429,6 +563,79 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
             </p>
           </div>
 
+          {/* ── Attachments ── */}
+          <div>
+            <div className='flex items-center justify-between mb-1'>
+              <Label>Attachments</Label>
+              {overrideAttachments && (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='text-xs h-6 px-2 gap-1'
+                  onClick={revertToDefaults}
+                >
+                  <Undo2 className='h-3 w-3' />
+                  Use defaults
+                </Button>
+              )}
+            </div>
+
+            {!overrideAttachments ? (
+              <div className='rounded-lg border bg-gray-50 p-3 space-y-2'>
+                <p className='text-sm text-gray-700'>Using your default documents:</p>
+                {defaultResume && (
+                  <p className='flex items-center gap-1.5 text-sm text-gray-900'>
+                    <FileText className='h-3.5 w-3.5 text-gray-500' />
+                    {defaultResume.file_name}
+                  </p>
+                )}
+                {defaultCoverLetter && (
+                  <p className='flex items-center gap-1.5 text-sm text-gray-900'>
+                    <FileText className='h-3.5 w-3.5 text-gray-500' />
+                    {defaultCoverLetter.file_name}
+                  </p>
+                )}
+                {!defaultResume && !defaultCoverLetter && (
+                  <p className='text-sm text-gray-500'>No default documents on file.</p>
+                )}
+                <Button
+                  type='button'
+                  variant='link'
+                  size='sm'
+                  className='h-auto p-0 text-xs text-blue-600'
+                  onClick={enableOverride}
+                >
+                  Use different files for this email
+                </Button>
+              </div>
+            ) : (
+              <div className='space-y-3'>
+                <AttachmentPicker
+                  label='Resume'
+                  file={resumeFile}
+                  error={resumeFileError}
+                  onChange={handleResumeFileChange}
+                />
+                <AttachmentPicker
+                  label='Cover Letter (optional)'
+                  file={coverLetterFile}
+                  error={coverLetterFileError}
+                  onChange={handleCoverLetterFileChange}
+                />
+                <Alert className='bg-amber-50 border-amber-200 py-2'>
+                  <AlertTriangle className='h-4 w-4 text-amber-600' />
+                  <AlertDescription className='text-amber-800 text-xs'>
+                    These will replace your default documents for this email only.
+                  </AlertDescription>
+                </Alert>
+                {attachmentsSubmitError && (
+                  <p className='text-xs text-red-600'>{attachmentsSubmitError}</p>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* ── Preview ── */}
           <div className='rounded-lg border bg-gray-50 p-3'>
             <p className='mb-2 text-sm font-medium text-gray-700'>Preview:</p>
@@ -456,5 +663,48 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+interface AttachmentPickerProps {
+  label: string
+  file: File | null
+  error: string
+  onChange: (file: File | null) => void
+}
+
+function AttachmentPicker({ label, file, error, onChange }: AttachmentPickerProps) {
+  return (
+    <div>
+      <Label className='text-xs text-gray-600'>{label}</Label>
+      {file ? (
+        <div className='mt-1 flex items-center justify-between rounded-lg border bg-gray-50 px-3 py-2'>
+          <span className='flex items-center gap-1.5 text-sm text-gray-900 truncate'>
+            <FileText className='h-3.5 w-3.5 shrink-0 text-gray-500' />
+            <span className='truncate'>{file.name}</span>
+            <span className='shrink-0 text-xs text-gray-500'>({formatFileSize(file.size)})</span>
+          </span>
+          <button
+            type='button'
+            onClick={() => onChange(null)}
+            className='shrink-0 rounded-full p-0.5 hover:bg-gray-200'
+          >
+            <X className='h-3.5 w-3.5' />
+          </button>
+        </div>
+      ) : (
+        <label className='mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 p-3 text-sm text-gray-500 hover:border-gray-400 hover:bg-gray-50'>
+          <Upload className='h-4 w-4' />
+          Click to browse
+          <input
+            type='file'
+            accept='.pdf,.doc,.docx'
+            className='hidden'
+            onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      )}
+      {error && <p className='mt-1 text-xs text-red-600'>{error}</p>}
+    </div>
   )
 }

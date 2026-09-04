@@ -4,10 +4,49 @@ import { ValidationService } from '@/lib/validation/validation-service'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendTrackedEmail } from '@/lib/email-sending-service'
 import { sendEmailSchema } from '@/lib/validation/schemas'
+import { ValidationError } from '@/lib/errors/app-error'
 import crypto from 'crypto'
 
 function generateTrackingId(): string {
   return crypto.randomBytes(16).toString('hex')
+}
+
+const MAX_OVERRIDE_ATTACHMENT_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_OVERRIDE_ATTACHMENT_EXTENSIONS = ['.pdf', '.doc', '.docx']
+
+function isAllowedOverrideAttachment(file: File): boolean {
+  const lowerName = file.name.toLowerCase()
+  return (
+    ALLOWED_OVERRIDE_ATTACHMENT_EXTENSIONS.some((ext) => lowerName.endsWith(ext)) &&
+    file.size <= MAX_OVERRIDE_ATTACHMENT_SIZE
+  )
+}
+
+/**
+ * Per-email attachment override: files are read straight into memory and
+ * attached to the outgoing message. They are never written to storage, so
+ * there is nothing to clean up afterward — this is a one-time, send-only swap.
+ */
+async function extractOverrideAttachments(
+  formData: FormData
+): Promise<Array<{ filename: string; content: Buffer }> | undefined> {
+  const files = [formData.get('resume'), formData.get('cover_letter')].filter(
+    (f): f is File => f instanceof File && f.size > 0
+  )
+
+  if (files.length === 0) return undefined
+
+  const attachments: Array<{ filename: string; content: Buffer }> = []
+  for (const file of files) {
+    if (!isAllowedOverrideAttachment(file)) {
+      throw new ValidationError(
+        `${file.name}: only PDF or DOCX files up to 10MB are allowed`
+      )
+    }
+    const buffer = Buffer.from(await file.arrayBuffer())
+    attachments.push({ filename: file.name, content: buffer })
+  }
+  return attachments
 }
 
 /**
@@ -72,8 +111,27 @@ export async function POST(request: Request) {
     // 1. Auth
     const auth = await AuthService.authenticateCookie()
 
-    // 2. Validate — validated.to is string[] after the schema transform
-    const body = await request.json()
+    // 2. Validate — validated.to is string[] after the schema transform.
+    // Override attachments arrive as multipart/form-data; the default flow
+    // (no override) keeps sending plain JSON, so both are supported here.
+    const contentType = request.headers.get('content-type') || ''
+    let overrideAttachments: Array<{ filename: string; content: Buffer }> | undefined
+
+    let body: Record<string, unknown>
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      body = {
+        job_id: formData.get('job_id'),
+        to: formData.get('to'),
+        subject: formData.get('subject'),
+        body: formData.get('body'),
+        account_id: formData.get('account_id') || undefined,
+      }
+      overrideAttachments = await extractOverrideAttachments(formData)
+    } else {
+      body = await request.json()
+    }
+
     const validated = ValidationService.validate(sendEmailSchema, body)
 
     const supabase = createServiceClient()
@@ -135,6 +193,7 @@ export async function POST(request: Request) {
         html: emailHtml,
         trackingPixelUrl,
         trackedLinks,
+        attachments: overrideAttachments,
       },
       validated.account_id
     )
