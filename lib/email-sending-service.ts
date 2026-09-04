@@ -24,6 +24,22 @@ export interface SendEmailResult {
   }
 }
 
+async function getSenderDisplayName(userId: string): Promise<string | null> {
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('user_settings')
+      .select('full_name')
+      .eq('user_id', userId)
+      .single()
+
+    return data?.full_name?.trim() || null
+  } catch (error) {
+    console.error('Error fetching sender display name:', error)
+    return null
+  }
+}
+
 async function getMasterDocumentAttachments(
   userId: string
 ): Promise<Array<{ filename: string; content: Buffer }>> {
@@ -110,10 +126,14 @@ export async function sendEmail(
       ? options.attachments
       : await getMasterDocumentAttachments(userId)
 
+  const senderName = await getSenderDisplayName(userId)
+
   let result: { messageId?: string }
   try {
     result = await transporter.sendMail({
-      from: account.email_address,
+      from: senderName
+        ? { name: senderName, address: account.email_address }
+        : account.email_address,
       to: options.to,
       subject: options.subject,
       html: options.html,
