@@ -37,7 +37,7 @@ interface JobCardProps {
   onRefresh?: () => void
 }
 
-const statusColors: Record<string, string> = {
+export const statusColors: Record<string, string> = {
   captured: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
   email_found: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
   email_sent: 'bg-purple-100 text-purple-800 hover:bg-purple-100',
@@ -46,7 +46,7 @@ const statusColors: Record<string, string> = {
   rejected: 'bg-red-100 text-red-800 hover:bg-red-100',
 }
 
-const statusLabels: Record<string, string> = {
+export const statusLabels: Record<string, string> = {
   captured: 'Captured',
   email_found: 'Email Found',
   email_sent: 'Email Sent',
