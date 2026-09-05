@@ -12,11 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { buttonVariants } from '@/components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { ContactList } from '@/components/dashboard/contact-list'
-import type { Job } from '@/types'
+import type { Job, JobStatus } from '@/types'
 
 interface JobCardProps {
   job: Job
@@ -25,6 +32,7 @@ interface JobCardProps {
   onSendEmail?: (id: string) => void
   onManualEmail?: (id: string, existingEmail?: string) => void
   onRemoveEmail?: (id: string) => void
+  onStatusChange?: (id: string, status: JobStatus) => void
   findingEmail?: string | null
   onRefresh?: () => void
 }
@@ -54,6 +62,7 @@ export function JobCard({
   onSendEmail,
   onManualEmail,
   onRemoveEmail,
+  onStatusChange,
   findingEmail,
   onRefresh,
 }: JobCardProps) {
@@ -119,7 +128,29 @@ export function JobCard({
             )}
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Badge className={statusColors[job.status]}>{statusLabels[job.status]}</Badge>
+              <Select
+                value={job.status}
+                onValueChange={(v) => {
+                  if (v !== null) onStatusChange?.(job.id, v as JobStatus)
+                }}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className={cn(
+                    'gap-1 border-0 py-0.5 text-xs font-medium rounded-full',
+                    statusColors[job.status]
+                  )}
+                >
+                  <SelectValue>{statusLabels[job.status]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(statusLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {!job.company_linkedin_url && (
                 <Badge variant="outline" className="gap-1 text-xs text-amber-600 border-amber-300">
                   ⚠️ Recapture for HR extraction

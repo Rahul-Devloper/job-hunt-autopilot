@@ -10,6 +10,7 @@ interface KanbanBoardProps {
   onSendEmail?: (id: string) => void
   onManualEmail?: (id: string, existingEmail?: string) => void
   onRemoveEmail?: (id: string) => void
+  onStatusChange?: (id: string, status: JobStatus) => void
   findingEmail?: string | null
   onRefresh?: () => void
 }
@@ -23,7 +24,7 @@ const columns: { status: JobStatus; label: string; color: string }[] = [
   { status: 'rejected', label: 'Rejected', color: 'bg-red-200' },
 ]
 
-export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, onManualEmail, onRemoveEmail, findingEmail, onRefresh }: KanbanBoardProps) {
+export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, onManualEmail, onRemoveEmail, onStatusChange, findingEmail, onRefresh }: KanbanBoardProps) {
   return (
     <div className="flex gap-4 p-8 overflow-x-auto min-h-full">
       {columns.map((column) => {
@@ -53,6 +54,7 @@ export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, onManual
                     onSendEmail={onSendEmail}
                     onManualEmail={onManualEmail}
                     onRemoveEmail={onRemoveEmail}
+                    onStatusChange={onStatusChange}
                     findingEmail={findingEmail}
                     onRefresh={onRefresh}
                   />

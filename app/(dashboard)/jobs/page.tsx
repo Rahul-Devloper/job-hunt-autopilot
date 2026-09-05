@@ -8,7 +8,7 @@ import { ManualEmailDialog } from '@/components/dashboard/manual-email-dialog'
 import { EmailComposer } from '@/components/dashboard/email-composer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
-import type { Job } from '@/types'
+import type { Job, JobStatus } from '@/types'
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
@@ -150,6 +150,29 @@ export default function JobsPage() {
     setEmailComposer(job)
   }
 
+  async function handleStatusChange(id: string, newStatus: JobStatus) {
+    const previousJobs = jobs
+    setJobs((current) =>
+      current.map((job) => (job.id === id ? { ...job, status: newStatus } : job))
+    )
+
+    try {
+      const response = await fetch(`/api/jobs/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || 'Failed to update status')
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+      setJobs(previousJobs)
+      alert('Failed to update status. Please try again.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -205,6 +228,7 @@ export default function JobsPage() {
                 onSendEmail={handleSendEmail}
                 onManualEmail={handleManualEmail}
                 onRemoveEmail={handleRemoveEmail}
+                onStatusChange={handleStatusChange}
                 findingEmail={findingEmail}
                 onRefresh={fetchJobs}
               />
