@@ -21,10 +21,10 @@ interface ListViewProps {
 
 export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, onManualEmail, onRemoveEmail, findingEmail }: ListViewProps) {
   return (
-    <div className="p-8">
-      <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="h-full p-8">
+      <div className="h-full overflow-auto rounded-lg border bg-card">
         <table className="w-full">
-          <thead className="border-b bg-muted/50">
+          <thead className="sticky top-0 z-10 border-b bg-muted">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Company

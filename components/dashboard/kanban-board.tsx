@@ -73,7 +73,10 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col gap-3 min-h-[80px] rounded-lg p-1 -m-1 transition-colors',
+        // flex-1 + min-h-0 lets the column body take the remaining height
+        // under its (fixed) header and scroll on its own; overflow-x-hidden
+        // stops overflow-y from also turning on a horizontal scrollbar.
+        'flex flex-1 min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-lg px-1 pt-1 pb-4 -mx-1 transition-colors',
         isOver && 'bg-blue-50 ring-2 ring-blue-300 dark:bg-blue-500/10 dark:ring-blue-500/40'
       )}
     >
@@ -139,13 +142,13 @@ export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, onManual
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveJob(null)}
     >
-      <div className="flex gap-4 p-8 overflow-x-auto min-h-full">
+      <div className="flex h-full gap-4 p-8 overflow-x-auto">
         {columns.map((column) => {
           const columnJobs = jobs.filter((job) => job.status === column.status)
 
           return (
-            <div key={column.status} className="flex flex-col w-72 shrink-0">
-              <div className="mb-3 flex items-center justify-between">
+            <div key={column.status} className="flex h-full min-h-0 w-72 shrink-0 flex-col">
+              <div className="mb-3 flex shrink-0 items-center justify-between">
                 <h3 className="font-semibold text-foreground">{column.label}</h3>
                 <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium text-gray-700 dark:text-foreground ${column.color}`}>
                   {columnJobs.length}

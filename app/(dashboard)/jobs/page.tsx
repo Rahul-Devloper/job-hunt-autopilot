@@ -189,9 +189,9 @@ export default function JobsPage() {
         onSearch={setSearchQuery}
       />
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden min-h-0">
         <Tabs defaultValue="kanban" className="h-full flex flex-col">
-          <div className="border-b bg-background px-8">
+          <div className="shrink-0 border-b bg-background px-8">
             <TabsList className="h-auto p-0 bg-transparent gap-0">
               <TabsTrigger
                 value="kanban"
@@ -208,7 +208,7 @@ export default function JobsPage() {
             </TabsList>
           </div>
 
-          <TabsContent value="kanban" className="m-0 flex-1">
+          <TabsContent value="kanban" className="m-0 flex-1 min-h-0 overflow-hidden">
             {filteredJobs.length === 0 ? (
               <div className="flex h-full items-center justify-center py-24">
                 <div className="text-center">
@@ -235,7 +235,7 @@ export default function JobsPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="list" className="m-0 flex-1">
+          <TabsContent value="list" className="m-0 flex-1 min-h-0 overflow-hidden">
             <ListView
               jobs={filteredJobs}
               onDelete={handleDelete}
