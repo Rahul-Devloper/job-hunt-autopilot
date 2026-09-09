@@ -28,11 +28,16 @@ window.addEventListener('message', function (event) {
       console.log('✅ Extension token saved')
     })
   }
-})
 
-function isJobPage() {
-  return window.location.href.includes('linkedin.com/jobs/view/')
-}
+  if (event.data && event.data.type === 'JHA_SET_ACTIVE_JOB') {
+    chrome.storage.local.set(
+      { jha_active_job_id: event.data.jobId, jha_active_job_ts: Date.now() },
+      function () {
+        console.log('[JHA] Active job_id stored:', event.data.jobId)
+      }
+    )
+  }
+})
 
 
 function injectCaptureButton() {
@@ -615,6 +620,23 @@ function waitForPeoplePageLoad(timeoutMs = 8000) {
   })
 }
 
+function isPeopleSearchPage() {
+  return location.href.includes('/search/results/people/')
+}
+
+function waitForResults(timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    const start = Date.now()
+    function check() {
+      const results = document.querySelectorAll('a[href*="/in/"]')
+      if (results.length > 0) return resolve(true)
+      if (Date.now() - start > timeoutMs) return resolve(false)
+      setTimeout(check, 400)
+    }
+    check()
+  })
+}
+
 function injectExtractButton() {
   if (document.getElementById('jha-extract-btn')) return
 
@@ -703,6 +725,191 @@ async function scrapeCompanyDomain() {
   }
 }
 
+/**
+ * Scraper for the old company /people/ page. LinkedIn has since removed
+ * individual profiles from that page (it now shows aggregate stat cards
+ * only), so this reliably finds nothing there anymore — kept as a harmless
+ * fallback in case that ever changes, but scrapeSearchResultsProfiles() is
+ * the live path (see PROBLEM in the HR-extraction-on-search-page feature).
+ */
+function scrapeCompanyPeopleProfiles() {
+  const allProfileLinks = document.querySelectorAll('a[href*="linkedin.com/in/"]')
+  const seen = new Set()
+  const profiles = []
+
+  for (const link of allProfileLinks) {
+    const href = link.href?.split('?')[0]
+    if (!href) continue
+
+    // Skip URN-based links
+    if (href.includes('ACoAA') || href.includes('urn%3A')) continue
+
+    if (seen.has(href)) continue
+    seen.add(href)
+
+    // Try text content first, fall back to img alt for image links
+    let name = link.textContent?.trim() || null
+    if (!name || name.length < 2) {
+      name = link.querySelector('img')?.alt?.trim() || null
+    }
+
+    if (!name || name.length < 2 || name.length > 80) {
+      console.log('[JHA] Skipping — no name found:', href)
+      continue
+    }
+
+    // Strip LinkedIn activity suffixes
+    const activitySuffixes = [
+      ' follows this page', ' is hiring', ' shared a post',
+      ' commented on', ' likes this', ' posted', ' reacted to',
+      ' follows you', ' is open to work',
+    ]
+    for (const suffix of activitySuffixes) {
+      const idx = name.toLowerCase().indexOf(suffix.toLowerCase())
+      if (idx > 0) {
+        name = name.substring(0, idx).trim()
+        break
+      }
+    }
+
+    // Skip names still containing activity words
+    const invalidWords = ['follows', 'hiring', 'shared', 'commented', 'posted', 'reacted', 'likes this', 'open to work']
+    if (invalidWords.some(w => name.toLowerCase().includes(w))) {
+      console.log('[JHA] Skipping invalid name:', name)
+      continue
+    }
+
+    console.log('[JHA] Found:', name, '→', href)
+
+    // Walk up to card for title
+    const card = link.closest('li')
+      || link.closest('[class*="org-people-profile-card"]')
+      || link.closest('[class*="artdeco-entity-lockup"]')
+      || link.parentElement?.parentElement
+
+    let title = null
+    if (card) {
+      const lines = (card.innerText || '')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0)
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i]
+        if (line.includes('degree connection')) continue
+        if (line.startsWith('·')) continue
+        if (line === '1st' || line === '2nd' || line === '3rd') continue
+        if (['Connect', 'Message', 'Follow', 'Pending'].includes(line)) continue
+        if (line.startsWith('Provides services')) continue
+        if (line.includes('followers') || line.includes('connections')) continue
+        title = line
+        break
+      }
+    }
+
+    console.log('[JHA] Profile:', name, '|', title, '|', href)
+
+    const hrKeywords = [
+      'recruit', 'talent', 'hr ', 'human resource',
+      'hiring', 'people ops', 'people partner', 'people & culture',
+      'head of people', 'acquisition', 'people director', 'resourcing',
+    ]
+    const isRelevant = !title || hrKeywords.some(kw =>
+      title.toLowerCase().includes(kw)
+    )
+
+    if (isRelevant) {
+      profiles.push({ name, title: title || 'Unknown', linkedin_url: href })
+      console.log('[JHA] ✅ Added:', name, '—', title)
+    } else {
+      console.log('[JHA] ❌ Skipped (not HR):', name, '—', title)
+    }
+  }
+
+  return profiles
+}
+
+/**
+ * Scraper for the people SEARCH results page — the working replacement for
+ * the now-dead company /people/ page.
+ *
+ * Verified LinkedIn structure: each RESULT is an <a href="…/in/USERNAME/">
+ * that carries a `componentkey` attribute and wraps the entire card (name
+ * div, title <p>, location <p>). That combination — /in/ href + componentkey
+ * — is a stable hook for "this is a result card", unlike matching on
+ * hashed/random class names. Anchoring on it also sidesteps the earlier
+ * messy-duplicate-link problem entirely, since only the card wrapper anchor
+ * (not the inner name-only link) carries componentkey.
+ *
+ * Mutual-connection mentions (e.g. "You and Amit are mutual connections")
+ * also render as /in/ links, but live inside a <p> containing "mutual" —
+ * skipped so they're never scraped as if they were search results.
+ */
+function scrapeSearchResultsProfiles() {
+  const seen = new Set()
+  const profiles = []
+
+  const resultAnchors = document.querySelectorAll('a[href*="/in/"][componentkey]')
+
+  for (const anchor of resultAnchors) {
+    const href = anchor.href.split('?')[0].replace(/\/$/, '')
+
+    // must be a clean profile url: /in/username with no sub-path
+    const afterIn = href.split('/in/')[1]
+    if (!afterIn || afterIn.includes('/')) continue
+    if (href.includes('ACoAA')) continue // skip URN-based
+    if (seen.has(href)) continue
+
+    // This anchor must be a RESULT wrapper, not a mutual-connection mention.
+    const inMutualP = anchor.closest('p')?.textContent?.toLowerCase().includes('mutual')
+    if (inMutualP) continue
+
+    // A real result card has name + title + location lines. A bare mention
+    // (e.g. just the name, no headline structure) isn't a result.
+    const cardText = (anchor.innerText || '').split('\n').map(s => s.trim()).filter(Boolean)
+    if (cardText.length < 2) continue
+
+    // NAME: first line, stripped of degree/badge noise
+    const name = cardText[0].replace(/•.*$/, '').trim()
+    if (!name || name.length < 2 || name.length > 80) continue
+
+    // TITLE: prefer a line with an HR keyword; else the first substantial
+    // non-noise, non-location line right after the name.
+    const hrKeywords = [
+      'recruit', 'talent', 'hr', 'human resource', 'hiring',
+      'people', 'acquisition', 'sourcer', 'staffing',
+    ]
+    let title = 'Unknown'
+    for (let i = 1; i < cardText.length; i++) {
+      const line = cardText[i]
+      const low = line.toLowerCase()
+      if (low.includes('mutual connection')) continue
+      if (low.includes('follower')) continue
+      if (low.includes('connect') || low === 'follow' || low === 'message') continue
+      if (/•\s*(1st|2nd|3rd)/.test(low) || /^(1st|2nd|3rd)/.test(low)) continue
+      if (hrKeywords.some(k => low.includes(k))) { title = line; break }
+      if (title === 'Unknown' && line.length > 5 && line.length < 200 && !line.includes(',')) {
+        title = line
+      }
+    }
+
+    // LOCATION (optional, for display only — not required by the backend)
+    let location = null
+    for (const line of cardText) {
+      if (/India|Area|,\s*[A-Z]/.test(line) && line.length < 60 && !line.toLowerCase().includes('mutual')) {
+        location = line
+        break
+      }
+    }
+
+    seen.add(href)
+    console.log('[JHA] Profile:', name, '|', title, '|', location, '|', href)
+    profiles.push({ name, title, linkedin_url: href, location })
+  }
+
+  return profiles
+}
+
 async function handleExtractClick() {
   const btn = document.getElementById('jha-extract-inner')
   btn.textContent = '⏳ Extracting...'
@@ -711,98 +918,9 @@ async function handleExtractClick() {
   try {
     console.log('[JHA] Starting HR contact extraction...')
 
-    const allProfileLinks = document.querySelectorAll('a[href*="linkedin.com/in/"]')
-    const seen = new Set()
-    const profiles = []
-
-    for (const link of allProfileLinks) {
-      const href = link.href?.split('?')[0]
-      if (!href) continue
-
-      // Skip URN-based links
-      if (href.includes('ACoAA') || href.includes('urn%3A')) continue
-
-      if (seen.has(href)) continue
-      seen.add(href)
-
-      // Try text content first, fall back to img alt for image links
-      let name = link.textContent?.trim() || null
-      if (!name || name.length < 2) {
-        name = link.querySelector('img')?.alt?.trim() || null
-      }
-
-      if (!name || name.length < 2 || name.length > 80) {
-        console.log('[JHA] Skipping — no name found:', href)
-        continue
-      }
-
-      // Strip LinkedIn activity suffixes
-      const activitySuffixes = [
-        ' follows this page', ' is hiring', ' shared a post',
-        ' commented on', ' likes this', ' posted', ' reacted to',
-        ' follows you', ' is open to work',
-      ]
-      for (const suffix of activitySuffixes) {
-        const idx = name.toLowerCase().indexOf(suffix.toLowerCase())
-        if (idx > 0) {
-          name = name.substring(0, idx).trim()
-          break
-        }
-      }
-
-      // Skip names still containing activity words
-      const invalidWords = ['follows', 'hiring', 'shared', 'commented', 'posted', 'reacted', 'likes this', 'open to work']
-      if (invalidWords.some(w => name.toLowerCase().includes(w))) {
-        console.log('[JHA] Skipping invalid name:', name)
-        continue
-      }
-
-      console.log('[JHA] Found:', name, '→', href)
-
-      // Walk up to card for title
-      const card = link.closest('li')
-        || link.closest('[class*="org-people-profile-card"]')
-        || link.closest('[class*="artdeco-entity-lockup"]')
-        || link.parentElement?.parentElement
-
-      let title = null
-      if (card) {
-        const lines = (card.innerText || '')
-          .split('\n')
-          .map(l => l.trim())
-          .filter(l => l.length > 0)
-
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i]
-          if (line.includes('degree connection')) continue
-          if (line.startsWith('·')) continue
-          if (line === '1st' || line === '2nd' || line === '3rd') continue
-          if (['Connect', 'Message', 'Follow', 'Pending'].includes(line)) continue
-          if (line.startsWith('Provides services')) continue
-          if (line.includes('followers') || line.includes('connections')) continue
-          title = line
-          break
-        }
-      }
-
-      console.log('[JHA] Profile:', name, '|', title, '|', href)
-
-      const hrKeywords = [
-        'recruit', 'talent', 'hr ', 'human resource',
-        'hiring', 'people ops', 'people partner', 'people & culture',
-        'head of people', 'acquisition', 'people director', 'resourcing',
-      ]
-      const isRelevant = !title || hrKeywords.some(kw =>
-        title.toLowerCase().includes(kw)
-      )
-
-      if (isRelevant) {
-        profiles.push({ name, title: title || 'Unknown', linkedin_url: href })
-        console.log('[JHA] ✅ Added:', name, '—', title)
-      } else {
-        console.log('[JHA] ❌ Skipped (not HR):', name, '—', title)
-      }
-    }
+    const profiles = isPeopleSearchPage()
+      ? scrapeSearchResultsProfiles()
+      : scrapeCompanyPeopleProfiles()
 
     console.log('[JHA] Total HR profiles:', profiles.length)
     console.log('[JHA] Profiles:', JSON.stringify(profiles, null, 2))
@@ -815,11 +933,30 @@ async function handleExtractClick() {
     }
 
     // STEP 6: Send to backend
+    // Storage is the primary source — LinkedIn rewrites the URL to its
+    // canonical form on load and strips jha_job_id, so the URL param only
+    // survives as a harmless fallback for the rare case storage is empty.
+    const storedJob = await chrome.storage.local.get(['jha_active_job_id', 'jha_active_job_ts'])
+    const storedJobId = storedJob.jha_active_job_id
+    const storedTs = storedJob.jha_active_job_ts || 0
+
+    // A stored job_id from an abandoned session (opened Find Contacts, never
+    // extracted) must never silently attach contacts to the wrong job later —
+    // so anything older than 30 minutes is treated as expired, not reused.
+    const THIRTY_MIN = 30 * 60 * 1000
+    if (storedJobId && Date.now() - storedTs > THIRTY_MIN) {
+      chrome.storage.local.remove(['jha_active_job_id', 'jha_active_job_ts'])
+      btn.textContent = '❌ Session expired — click "Find Contacts" in JHA again'
+      btn.style.background = '#dc2626'
+      btn.disabled = false
+      return
+    }
+
     const urlParams = new URLSearchParams(window.location.search)
-    const jobId = urlParams.get('jha_job_id')
+    const jobId = storedJobId || urlParams.get('jha_job_id')
 
     if (!jobId) {
-      btn.textContent = '❌ No job ID — open from JHA'
+      btn.textContent = '❌ No job linked — click "Find Contacts" in JHA first'
       btn.style.background = '#dc2626'
       btn.disabled = false
       return
@@ -857,6 +994,7 @@ async function handleExtractClick() {
     if (data.success) {
       btn.textContent = `✅ Found ${data.data.contacts_saved} contacts!`
       btn.style.background = '#16a34a'
+      chrome.storage.local.remove(['jha_active_job_id', 'jha_active_job_ts'])
     } else {
       btn.textContent = '❌ Error saving contacts'
       btn.style.background = '#dc2626'
@@ -871,36 +1009,42 @@ async function handleExtractClick() {
   }
 }
 
-// Initialize
-const currentUrl = window.location.href
-
-if (currentUrl.includes('linkedin.com/jobs/view/')) {
-  console.log('[JHA] Job page detected')
-  setTimeout(injectCaptureButton, 2000)
-
-  // Watch for DOM changes (LinkedIn is a SPA)
-  const observer = new MutationObserver(() => {
-    if (isJobPage()) injectCaptureButton()
-  })
-  observer.observe(document.body, { childList: true, subtree: true })
-
-} else if (currentUrl.includes('linkedin.com/company/') && currentUrl.includes('/people/')) {
-  console.log('[JHA] LinkedIn people page detected')
-  waitForPeoplePageLoad().then(() => injectExtractButton())
+// Initialize + SPA navigation detection.
+//
+// LinkedIn's search-results page in particular re-renders aggressively on
+// scroll/filter/navigation. An observer scoped to document/document.body
+// with subtree:true fires on every single DOM mutation across the whole
+// page — on a page that churns like this, that's thousands of callback
+// invocations per scroll, which has frozen the browser in real usage.
+// Never widen this scope back to document/document.body — watch a tiny,
+// stable element instead (here, <title>, which LinkedIn updates on every
+// SPA route change) and debounce the callback so it only reacts once the
+// DOM has settled, not on every intermediate mutation.
+function detectPageAndInject() {
+  const url = location.href
+  if (url.includes('linkedin.com/jobs/view/')) {
+    console.log('[JHA] Job page detected')
+    setTimeout(injectCaptureButton, 2000)
+  } else if (url.includes('linkedin.com/company/') && url.includes('/people/')) {
+    console.log('[JHA] LinkedIn company people page detected')
+    waitForPeoplePageLoad().then(() => injectExtractButton())
+  } else if (isPeopleSearchPage()) {
+    console.log('[JHA] LinkedIn people search page detected')
+    waitForResults().then(() => injectExtractButton())
+  }
 }
 
-// Watch for SPA navigation
-let lastUrl = location.href
-new MutationObserver(() => {
-  const url = location.href
-  if (url !== lastUrl) {
-    lastUrl = url
-    if (url.includes('linkedin.com/jobs/view/')) {
-      console.log('[JHA] SPA nav → job page')
-      setTimeout(injectCaptureButton, 2000)
-    } else if (url.includes('linkedin.com/company/') && url.includes('/people/')) {
-      console.log('[JHA] SPA nav → people page')
-      waitForPeoplePageLoad().then(() => injectExtractButton())
-    }
-  }
-}).observe(document, { subtree: true, childList: true })
+detectPageAndInject() // initial load
+
+let navDebounce = null
+function onPossibleNavChange() {
+  clearTimeout(navDebounce)
+  navDebounce = setTimeout(detectPageAndInject, 500)
+}
+
+const titleEl = document.querySelector('title')
+if (titleEl) {
+  new MutationObserver(onPossibleNavChange).observe(titleEl, { childList: true })
+} else {
+  console.warn('[JHA] No <title> element found — SPA nav detection disabled on this page')
+}

@@ -70,20 +70,22 @@ export function JobCard({
   const [findingContacts, setFindingContacts] = useState(false)
 
   async function handleFindContacts() {
-    if (!job.company_linkedin_url) {
-      alert('No company LinkedIn URL captured. Please recapture this job to enable HR contact extraction.')
-      return
-    }
-
     setFindingContacts(true)
 
     try {
-      const slug = job.company_linkedin_url
-        .replace('https://www.linkedin.com/company/', '')
-        .replace(/\/$/, '')
+      // LinkedIn rewrites the URL to its canonical form on load, stripping
+      // jha_job_id — so hand the job id to the extension via storage before
+      // opening the tab. The URL param is kept as a harmless fallback.
+      window.postMessage({ type: 'JHA_SET_ACTIVE_JOB', jobId: job.id }, '*')
 
-      const peopleUrl = `https://www.linkedin.com/company/${slug}/people/?keywords=recruiter+talent+acquisition+HR+hiring&jha_job_id=${job.id}`
-      window.open(peopleUrl, '_blank')
+      // The company /people/ page no longer lists individual profiles —
+      // LinkedIn replaced it with aggregate stat cards. The people SEARCH
+      // page still shows real profiles with names/titles/links, so that's
+      // the live path now; it only needs the company name, not a captured
+      // company LinkedIn slug.
+      const keywords = encodeURIComponent(`talent acquisition recruiter ${job.company_name}`)
+      const searchUrl = `https://www.linkedin.com/search/results/people/?keywords=${keywords}&jha_job_id=${job.id}`
+      window.open(searchUrl, '_blank')
 
       setContactsOpen(true)
 
@@ -96,7 +98,7 @@ export function JobCard({
       }
       document.addEventListener('visibilitychange', handleVisibilityChange)
     } catch {
-      alert('Error opening LinkedIn people page')
+      alert('Error opening LinkedIn search page')
     } finally {
       setFindingContacts(false)
     }
@@ -151,11 +153,6 @@ export function JobCard({
                   ))}
                 </SelectContent>
               </Select>
-              {!job.company_linkedin_url && (
-                <Badge variant="outline" className="gap-1 text-xs text-amber-600 border-amber-300">
-                  ⚠️ Recapture for HR extraction
-                </Badge>
-              )}
               {job.hr_email && (
                 <Badge variant="outline" className="gap-1 text-xs">
                   <Mail className="h-3 w-3" />
