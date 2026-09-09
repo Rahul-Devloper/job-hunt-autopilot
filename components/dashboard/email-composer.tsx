@@ -408,7 +408,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
               </SelectContent>
             </Select>
             {accounts.length === 0 && (
-              <p className='text-sm text-amber-600 mt-1'>
+              <p className='text-sm text-amber-600 dark:text-amber-400 mt-1'>
                 No email accounts configured.{' '}
                 <a href='/dashboard/settings/email-accounts' className='underline'>
                   Add one
@@ -423,7 +423,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
               <Label htmlFor='to-emails'>
                 To{' '}
                 {recipientCount > 0 && (
-                  <span className='text-blue-600 font-normal text-sm'>
+                  <span className='text-blue-600 dark:text-blue-400 font-normal text-sm'>
                     ({recipientCount} recipient{recipientCount > 1 ? 's' : ''})
                   </span>
                 )}
@@ -433,7 +433,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
                   type='button'
                   variant='ghost'
                   size='sm'
-                  className='text-xs text-blue-600 hover:text-blue-800 h-6 px-2'
+                  className='text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 h-6 px-2'
                   onClick={addAllContacts}
                 >
                   <UserPlus className='h-3 w-3 mr-1' />
@@ -452,12 +452,12 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
               className={emailError ? 'border-red-500 focus-visible:ring-red-500' : ''}
             />
 
-            <p className='text-xs text-gray-500 mt-1'>
+            <p className='text-xs text-muted-foreground mt-1'>
               Separate multiple emails with commas. All recipients will see each other.
             </p>
 
             {emailError && (
-              <p className='text-xs text-red-600 mt-1'>{emailError}</p>
+              <p className='text-xs text-red-600 dark:text-red-400 mt-1'>{emailError}</p>
             )}
 
             {/* Recipient chips */}
@@ -469,7 +469,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
                     <button
                       type='button'
                       onClick={() => removeRecipient(email)}
-                      className='rounded-full hover:bg-gray-300 p-0.5'
+                      className='rounded-full hover:bg-muted p-0.5'
                     >
                       <X className='h-2.5 w-2.5' />
                     </button>
@@ -481,7 +481,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
             {/* Quick-add contact buttons */}
             {contacts.length > 0 && (
               <div className='mt-2'>
-                <p className='text-xs text-gray-500 mb-1'>Quick add:</p>
+                <p className='text-xs text-muted-foreground mb-1'>Quick add:</p>
                 <div className='flex flex-wrap gap-1'>
                   {contacts.map((contact) => {
                     const isAdded = recipientList.includes(contact.email)
@@ -507,9 +507,9 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
 
             {/* Info alert for multiple recipients */}
             {recipientCount > 1 && (
-              <Alert className='mt-2 bg-blue-50 border-blue-200 py-2'>
-                <Info className='h-4 w-4 text-blue-600' />
-                <AlertDescription className='text-blue-800 text-xs'>
+              <Alert className='mt-2 bg-blue-50 border-blue-200 py-2 dark:bg-blue-500/10 dark:border-blue-500/25'>
+                <Info className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+                <AlertDescription className='text-blue-800 dark:text-blue-200 text-xs'>
                   Sending to <strong>{recipientCount} recipients</strong>. All will see each other&apos;s addresses.
                 </AlertDescription>
               </Alert>
@@ -534,7 +534,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
                 type='button'
                 variant='outline'
                 size='sm'
-                className='h-7 px-2 text-xs gap-1 text-purple-700 border-purple-300 hover:bg-purple-50'
+                className='h-7 px-2 text-xs gap-1 text-purple-700 border-purple-300 hover:bg-purple-50 dark:text-purple-300 dark:border-purple-500/40 dark:hover:bg-purple-500/10'
                 onClick={handleGenerateDraft}
                 disabled={generatingDraft || sending}
               >
@@ -558,7 +558,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
               onChange={(e) => setBody(e.target.value)}
               className='font-mono text-sm'
             />
-            <p className='mt-1 text-xs text-gray-500'>
+            <p className='mt-1 text-xs text-muted-foreground'>
               Variables: {'{company}'}, {'{role}'}, {'{hr_name}'}
             </p>
           </div>
@@ -582,28 +582,28 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
             </div>
 
             {!overrideAttachments ? (
-              <div className='rounded-lg border bg-gray-50 p-3 space-y-2'>
-                <p className='text-sm text-gray-700'>Using your default documents:</p>
+              <div className='rounded-lg border bg-muted/50 p-3 space-y-2'>
+                <p className='text-sm text-foreground'>Using your default documents:</p>
                 {defaultResume && (
-                  <p className='flex items-center gap-1.5 text-sm text-gray-900'>
-                    <FileText className='h-3.5 w-3.5 text-gray-500' />
+                  <p className='flex items-center gap-1.5 text-sm text-foreground'>
+                    <FileText className='h-3.5 w-3.5 text-muted-foreground' />
                     {defaultResume.file_name}
                   </p>
                 )}
                 {defaultCoverLetter && (
-                  <p className='flex items-center gap-1.5 text-sm text-gray-900'>
-                    <FileText className='h-3.5 w-3.5 text-gray-500' />
+                  <p className='flex items-center gap-1.5 text-sm text-foreground'>
+                    <FileText className='h-3.5 w-3.5 text-muted-foreground' />
                     {defaultCoverLetter.file_name}
                   </p>
                 )}
                 {!defaultResume && !defaultCoverLetter && (
-                  <p className='text-sm text-gray-500'>No default documents on file.</p>
+                  <p className='text-sm text-muted-foreground'>No default documents on file.</p>
                 )}
                 <Button
                   type='button'
                   variant='link'
                   size='sm'
-                  className='h-auto p-0 text-xs text-blue-600'
+                  className='h-auto p-0 text-xs text-blue-600 dark:text-blue-400'
                   onClick={enableOverride}
                 >
                   Use different files for this email
@@ -623,23 +623,23 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
                   error={coverLetterFileError}
                   onChange={handleCoverLetterFileChange}
                 />
-                <Alert className='bg-amber-50 border-amber-200 py-2'>
-                  <AlertTriangle className='h-4 w-4 text-amber-600' />
-                  <AlertDescription className='text-amber-800 text-xs'>
+                <Alert className='bg-amber-50 border-amber-200 py-2 dark:bg-amber-500/10 dark:border-amber-500/25'>
+                  <AlertTriangle className='h-4 w-4 text-amber-600 dark:text-amber-400' />
+                  <AlertDescription className='text-amber-800 dark:text-amber-200 text-xs'>
                     These will replace your default documents for this email only.
                   </AlertDescription>
                 </Alert>
                 {attachmentsSubmitError && (
-                  <p className='text-xs text-red-600'>{attachmentsSubmitError}</p>
+                  <p className='text-xs text-red-600 dark:text-red-400'>{attachmentsSubmitError}</p>
                 )}
               </div>
             )}
           </div>
 
           {/* ── Preview ── */}
-          <div className='rounded-lg border bg-gray-50 p-3'>
-            <p className='mb-2 text-sm font-medium text-gray-700'>Preview:</p>
-            <div className='whitespace-pre-wrap text-sm text-gray-900'>{previewBody}</div>
+          <div className='rounded-lg border bg-muted/50 p-3'>
+            <p className='mb-2 text-sm font-medium text-foreground'>Preview:</p>
+            <div className='whitespace-pre-wrap text-sm text-foreground'>{previewBody}</div>
           </div>
         </div>
 
@@ -676,24 +676,24 @@ interface AttachmentPickerProps {
 function AttachmentPicker({ label, file, error, onChange }: AttachmentPickerProps) {
   return (
     <div>
-      <Label className='text-xs text-gray-600'>{label}</Label>
+      <Label className='text-xs text-muted-foreground'>{label}</Label>
       {file ? (
-        <div className='mt-1 flex items-center justify-between rounded-lg border bg-gray-50 px-3 py-2'>
-          <span className='flex items-center gap-1.5 text-sm text-gray-900 truncate'>
-            <FileText className='h-3.5 w-3.5 shrink-0 text-gray-500' />
+        <div className='mt-1 flex items-center justify-between rounded-lg border bg-muted/50 px-3 py-2'>
+          <span className='flex items-center gap-1.5 text-sm text-foreground truncate'>
+            <FileText className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
             <span className='truncate'>{file.name}</span>
-            <span className='shrink-0 text-xs text-gray-500'>({formatFileSize(file.size)})</span>
+            <span className='shrink-0 text-xs text-muted-foreground'>({formatFileSize(file.size)})</span>
           </span>
           <button
             type='button'
             onClick={() => onChange(null)}
-            className='shrink-0 rounded-full p-0.5 hover:bg-gray-200'
+            className='shrink-0 rounded-full p-0.5 hover:bg-muted'
           >
             <X className='h-3.5 w-3.5' />
           </button>
         </div>
       ) : (
-        <label className='mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 p-3 text-sm text-gray-500 hover:border-gray-400 hover:bg-gray-50'>
+        <label className='mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input p-3 text-sm text-muted-foreground hover:border-input hover:bg-muted/50'>
           <Upload className='h-4 w-4' />
           Click to browse
           <input

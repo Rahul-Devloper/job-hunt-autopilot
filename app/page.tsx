@@ -8,9 +8,9 @@ export default async function LandingPage() {
   const user = await getCurrentUser()
   if (user) redirect('/jobs')
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/30 dark:to-background">
       <nav className="container mx-auto flex items-center justify-between p-6">
-        <h1 className="text-2xl font-bold text-blue-600">Job Hunt Autopilot</h1>
+        <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Job Hunt Autopilot</h1>
         <div className="flex gap-4">
           <Link href="/login">
             <Button variant="ghost">Sign In</Button>
@@ -22,10 +22,10 @@ export default async function LandingPage() {
       </nav>
 
       <main className="container mx-auto px-6 py-20 text-center">
-        <h2 className="mb-6 text-5xl font-bold text-gray-900">
+        <h2 className="mb-6 text-5xl font-bold text-foreground">
           Automate Your Job Hunt
         </h2>
-        <p className="mb-8 text-xl text-gray-600 max-w-2xl mx-auto">
+        <p className="mb-8 text-xl text-muted-foreground max-w-2xl mx-auto">
           Capture jobs from LinkedIn, find HR emails for free, send tracked emails, and see who&apos;s interested — all in one place.
         </p>
 
@@ -36,29 +36,29 @@ export default async function LandingPage() {
           </Button>
         </Link>
 
-        <p className="mt-4 text-sm text-gray-500">No credit card required</p>
+        <p className="mt-4 text-sm text-muted-foreground">No credit card required</p>
 
         <div className="mt-20 grid gap-8 md:grid-cols-3">
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <Zap className="mx-auto mb-4 h-12 w-12 text-blue-600" />
+          <div className="rounded-lg border bg-card p-6 shadow-sm">
+            <Zap className="mx-auto mb-4 h-12 w-12 text-blue-600 dark:text-blue-400" />
             <h3 className="mb-2 text-xl font-bold">Find Emails Free</h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               No more paying $49/month for email finders. Our community database grows with every user.
             </p>
           </div>
 
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <Mail className="mx-auto mb-4 h-12 w-12 text-blue-600" />
+          <div className="rounded-lg border bg-card p-6 shadow-sm">
+            <Mail className="mx-auto mb-4 h-12 w-12 text-blue-600 dark:text-blue-400" />
             <h3 className="mb-2 text-xl font-bold">Track Everything</h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Know when recruiters open your emails and click your LinkedIn profile.
             </p>
           </div>
 
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <TrendingUp className="mx-auto mb-4 h-12 w-12 text-blue-600" />
+          <div className="rounded-lg border bg-card p-6 shadow-sm">
+            <TrendingUp className="mx-auto mb-4 h-12 w-12 text-blue-600 dark:text-blue-400" />
             <h3 className="mb-2 text-xl font-bold">Analytics Dashboard</h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               See which companies are interested with beautiful charts and hot lead alerts.
             </p>
           </div>

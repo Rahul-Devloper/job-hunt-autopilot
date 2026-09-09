@@ -60,18 +60,18 @@ function DocumentSection({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="border-2 border-dashed border-gray-200 rounded-lg p-6">
+        <div className="border-2 border-dashed border-border rounded-lg p-6">
           <Label htmlFor={uploadId} className="cursor-pointer">
             <div className="flex flex-col items-center gap-2 text-center">
               {uploading ? (
-                <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
               ) : (
-                <Upload className="h-8 w-8 text-gray-400" />
+                <Upload className="h-8 w-8 text-muted-foreground" />
               )}
               <p className="text-sm font-medium">
                 {uploading ? 'Uploading...' : `Upload ${title} (PDF only)`}
               </p>
-              <p className="text-xs text-gray-500">Maximum file size: 5MB</p>
+              <p className="text-xs text-muted-foreground">Maximum file size: 5MB</p>
             </div>
           </Label>
           <Input
@@ -90,8 +90,8 @@ function DocumentSection({
 
         {documents.length === 0 ? (
           <div className="text-center py-8">
-            <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">No {title.toLowerCase()}s uploaded yet</p>
+            <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
+            <p className="text-muted-foreground">No {title.toLowerCase()}s uploaded yet</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -99,20 +99,20 @@ function DocumentSection({
               <div
                 key={doc.id}
                 className={`flex items-center justify-between p-4 rounded-lg border ${
-                  doc.is_master ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+                  doc.is_master ? 'border-blue-300 bg-blue-50 dark:border-blue-500/40 dark:bg-blue-500/10' : 'border-border'
                 }`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium truncate">{doc.display_name || doc.file_name}</p>
                     {doc.is_master && (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full shrink-0">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full shrink-0 dark:text-blue-300 dark:bg-blue-500/20">
                         <Star className="h-3 w-3 fill-current" />
                         Master
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     {formatFileSize(doc.file_size)} · {new Date(doc.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -255,7 +255,7 @@ export default function DocumentsPage() {
       <div className="flex h-full flex-col">
         <Header title="Documents" description="Manage your CV and cover letters" />
         <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
     )
@@ -267,9 +267,9 @@ export default function DocumentsPage() {
 
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-4xl space-y-6">
-          <Alert className="bg-blue-50 border-blue-200">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900">
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/25">
+            <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-900 dark:text-blue-100">
               Your <strong>master CV</strong> and <strong>master cover letter</strong> will be
               automatically attached to all job application emails.
             </AlertDescription>

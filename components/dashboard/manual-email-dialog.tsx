@@ -137,7 +137,7 @@ export function ManualEmailDialog({
                   <SelectItem value="personal">Personal Recruiter (john.smith@)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Personal emails get better response rates!
               </p>
             </div>

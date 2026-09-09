@@ -52,11 +52,11 @@ function LoginForm() {
           {loading ? 'Signing in...' : 'Sign in with Google'}
         </Button>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-muted-foreground">
           No account?{' '}
           <Link
             href={`/signup${redirectTo !== '/jobs' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             Sign up free
           </Link>

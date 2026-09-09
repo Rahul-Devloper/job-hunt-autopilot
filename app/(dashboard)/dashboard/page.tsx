@@ -20,29 +20,29 @@ export default async function DashboardPage() {
         label: 'Total Jobs',
         value: total,
         icon: Briefcase,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
+        color: 'text-blue-600 dark:text-blue-400',
+        bgColor: 'bg-blue-50 dark:bg-blue-500/10',
       },
       {
         label: 'Captured',
         value: captured,
         icon: TrendingUp,
-        color: 'text-gray-600',
-        bgColor: 'bg-gray-50',
+        color: 'text-muted-foreground',
+        bgColor: 'bg-muted',
       },
       {
         label: 'Email Found',
         value: emailFound,
         icon: Mail,
-        color: 'text-purple-600',
-        bgColor: 'bg-purple-50',
+        color: 'text-purple-600 dark:text-purple-400',
+        bgColor: 'bg-purple-50 dark:bg-purple-500/10',
       },
       {
         label: 'Email Sent',
         value: emailSent,
         icon: Send,
-        color: 'text-green-600',
-        bgColor: 'bg-green-50',
+        color: 'text-green-600 dark:text-green-400',
+        bgColor: 'bg-green-50 dark:bg-green-500/10',
       },
     ]
 
@@ -59,8 +59,8 @@ export default async function DashboardPage() {
               <Card key={stat.label} className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                    <p className="mt-2 text-3xl font-bold text-foreground">{stat.value}</p>
                   </div>
                   <div className={`rounded-xl p-3 ${stat.bgColor}`}>
                     <stat.icon className={`h-6 w-6 ${stat.color}`} />
@@ -72,11 +72,11 @@ export default async function DashboardPage() {
 
           {total === 0 && (
             <Card className="mt-8 p-12 text-center border-dashed">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
-                <Briefcase className="h-7 w-7 text-gray-400" />
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                <Briefcase className="h-7 w-7 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">No jobs captured yet</h3>
-              <p className="mt-2 text-sm text-gray-500">
+              <h3 className="text-lg font-semibold text-foreground">No jobs captured yet</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Install the Chrome extension and start capturing jobs from LinkedIn!
               </p>
             </Card>

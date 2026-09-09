@@ -9,7 +9,7 @@ export default async function DashboardLayout({
   const user = await requireAuth()
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-muted/40">
       <Sidebar userEmail={user.email ?? ''} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {children}

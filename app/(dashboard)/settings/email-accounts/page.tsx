@@ -200,7 +200,7 @@ export default function EmailAccountsPage() {
       <div className="flex h-full flex-col">
         <Header title="Email Accounts" description="Manage your email sending accounts" />
         <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
     )
@@ -243,19 +243,19 @@ export default function EmailAccountsPage() {
               </div>
 
               {detectedProvider && (
-                <Alert className="bg-blue-50 border-blue-200">
+                <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/25">
                   <AlertDescription>
                     <div className="space-y-2">
-                      <p className="font-medium text-blue-900">
+                      <p className="font-medium text-blue-900 dark:text-blue-100">
                         {detectedProvider.name} detected!
                       </p>
-                      <p className="text-sm text-blue-700">{detectedProvider.instructions}</p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">{detectedProvider.instructions}</p>
                       {detectedProvider.setupUrl && (
                         <a
                           href={detectedProvider.setupUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 underline"
+                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 underline dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           Setup instructions
                           <ExternalLink className="h-3 w-3" />
@@ -281,14 +281,14 @@ export default function EmailAccountsPage() {
                   autoComplete="new-password"
                 />
                 {needsAppPassword && (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                     Use an App Password, not your regular password
                   </p>
                 )}
               </div>
 
               {showCustom && (
-                <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
                   <p className="text-sm font-medium">Custom SMTP Settings</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -374,9 +374,9 @@ export default function EmailAccountsPage() {
             <CardContent>
               {accounts.length === 0 ? (
                 <div className="text-center py-12">
-                  <Mail className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-2">No email accounts yet</p>
-                  <p className="text-sm text-gray-400">
+                  <Mail className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-2">No email accounts yet</p>
+                  <p className="text-sm text-muted-foreground">
                     Add an account above to start sending emails
                   </p>
                 </div>
@@ -387,36 +387,36 @@ export default function EmailAccountsPage() {
                       key={account.id}
                       className={`flex items-center justify-between rounded-lg border p-4 ${
                         account.is_primary
-                          ? 'border-blue-300 bg-blue-50'
-                          : 'border-gray-200'
+                          ? 'border-blue-300 bg-blue-50 dark:border-blue-500/40 dark:bg-blue-500/10'
+                          : 'border-border'
                       }`}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium">{account.email_address}</p>
                           {account.is_primary && (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full dark:text-blue-300 dark:bg-blue-500/20">
                               <Star className="h-3 w-3 fill-current" />
                               Primary
                             </span>
                           )}
                           {account.is_verified ? (
                             <span title="Verified">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                             </span>
                           ) : (
                             <span title="Not verified">
-                              <XCircle className="h-4 w-4 text-amber-600" />
+                              <XCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {account.provider_name}
                           {account.last_used_at && (
                             <> · Last used {new Date(account.last_used_at).toLocaleDateString()}</>
                           )}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {account.smtp_host}:{account.smtp_port}
                         </p>
                       </div>

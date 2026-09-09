@@ -52,17 +52,17 @@ function SignupForm() {
           {loading ? 'Creating account...' : 'Sign up with Google'}
         </Button>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link
             href={`/login${redirectTo !== '/jobs' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             Sign in
           </Link>
         </p>
 
-        <div className="rounded-lg bg-green-50 p-4 text-sm text-green-800">
+        <div className="rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-500/10 dark:text-green-200">
           <p className="font-medium">Free Forever:</p>
           <ul className="mt-2 space-y-1 text-xs">
             <li>• No credit card required</li>

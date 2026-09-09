@@ -118,9 +118,9 @@ export default function ExtensionPage() {
   }
 
   function getExpiryColor(daysLeft: number): string {
-    if (daysLeft <= 3) return 'text-red-600'
-    if (daysLeft <= 7) return 'text-orange-600'
-    return 'text-gray-500'
+    if (daysLeft <= 3) return 'text-red-600 dark:text-red-400'
+    if (daysLeft <= 7) return 'text-orange-600 dark:text-orange-400'
+    return 'text-muted-foreground'
   }
 
   if (loading) {
@@ -128,7 +128,7 @@ export default function ExtensionPage() {
       <div className="flex h-full flex-col">
         <Header title="Extension Setup" description="Connect your Chrome extension" />
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
@@ -167,18 +167,18 @@ export default function ExtensionPage() {
               </Button>
 
               {newToken && (
-                <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+                <div className="rounded-lg bg-green-50 p-4 border border-green-200 dark:bg-green-500/10 dark:border-green-500/25">
                   <div className="flex items-start gap-2 mb-3">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                    <Check className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-medium text-green-900">Token Generated Successfully!</p>
-                      <p className="text-sm text-green-700 mt-1">
+                      <p className="font-medium text-green-900 dark:text-green-100">Token Generated Successfully!</p>
+                      <p className="text-sm text-green-700 dark:text-green-300 mt-1">
                         Token has been automatically sent to your extension. Valid for 90 days.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded bg-white p-3 text-xs text-green-900 border border-green-300 font-mono overflow-x-auto">
+                    <code className="flex-1 rounded bg-background p-3 text-xs text-green-900 dark:text-green-100 border border-green-300 dark:border-green-500/40 font-mono overflow-x-auto">
                       {newToken}
                     </code>
                     <Button
@@ -193,7 +193,7 @@ export default function ExtensionPage() {
                 </div>
               )}
 
-              <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800 border border-blue-200">
+              <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-200 dark:border-blue-500/25">
                 <p className="font-medium mb-2">Setup Instructions:</p>
                 <ol className="list-decimal list-inside space-y-1.5">
                   <li>Click &quot;Generate New Token&quot; above</li>
@@ -215,9 +215,9 @@ export default function ExtensionPage() {
             <CardContent>
               {tokens.length === 0 ? (
                 <div className="text-center py-12">
-                  <Chrome className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-2">No active tokens</p>
-                  <p className="text-sm text-gray-400">
+                  <Chrome className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-2">No active tokens</p>
+                  <p className="text-sm text-muted-foreground">
                     Generate a token above to connect your extension
                   </p>
                 </div>
@@ -232,24 +232,24 @@ export default function ExtensionPage() {
                       <div
                         key={token.id}
                         className={`flex items-center justify-between rounded-lg border p-4 ${
-                          isExpiringSoon ? 'border-orange-300 bg-orange-50' : 'border-gray-200'
+                          isExpiringSoon ? 'border-orange-300 bg-orange-50 dark:border-orange-500/40 dark:bg-orange-500/10' : 'border-border'
                         }`}
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium">{token.device_name}</p>
                             {isExpiringSoon && (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full dark:text-orange-300 dark:bg-orange-500/20">
                                 <AlertTriangle className="h-3 w-3" />
                                 Expiring Soon
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             Created: {new Date(token.created_at).toLocaleDateString()}
                           </p>
                           {token.last_used_at && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-muted-foreground">
                               Last used: {new Date(token.last_used_at).toLocaleString()}
                             </p>
                           )}

@@ -77,21 +77,21 @@ export function EmailFinderCard({ provider, status, onSave, onRemove }: EmailFin
   }
 
   return (
-    <Card className={isConnected ? 'border-green-200 bg-green-50/30' : ''}>
+    <Card className={isConnected ? 'border-green-200 bg-green-50/30 dark:border-green-500/25 dark:bg-green-500/5' : ''}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-600">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-bold text-muted-foreground">
               {provider.name.substring(0, 2).toUpperCase()}
             </div>
             <div>
               <CardTitle className="text-base flex items-center gap-2">
                 {provider.name}
-                <Badge variant="outline" className="text-xs font-normal text-green-700 border-green-300 bg-green-50">
+                <Badge variant="outline" className="text-xs font-normal text-green-700 border-green-300 bg-green-50 dark:text-green-300 dark:border-green-500/40 dark:bg-green-500/10">
                   {provider.freeCredits} free/mo
                 </Badge>
                 {provider.authType === 'oauth' && (
-                  <Badge variant="outline" className="text-xs font-normal text-purple-700 border-purple-300 bg-purple-50">
+                  <Badge variant="outline" className="text-xs font-normal text-purple-700 border-purple-300 bg-purple-50 dark:text-purple-300 dark:border-purple-500/40 dark:bg-purple-500/10">
                     OAuth
                   </Badge>
                 )}
@@ -103,7 +103,7 @@ export function EmailFinderCard({ provider, status, onSave, onRemove }: EmailFin
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 text-gray-400 hover:text-red-500"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 dark:hover:text-red-400"
               onClick={handleRemove}
               disabled={removing}
               title="Remove"
@@ -118,23 +118,23 @@ export function EmailFinderCard({ provider, status, onSave, onRemove }: EmailFin
         {/* Connection status */}
         {isConnected && (
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-sm text-green-700">
+            <div className="flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
               <Check className="h-3.5 w-3.5" />
               <span className="font-medium">Connected</span>
               {(status?.credits_remaining ?? 0) > 0 && (
-                <span className="text-gray-500 font-normal">
+                <span className="text-muted-foreground font-normal">
                   · {status?.credits_remaining} credits remaining
                 </span>
               )}
             </div>
             {tokenExpiresInMin !== null && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 Token refreshes in {tokenExpiresInMin}m
               </div>
             )}
             {status?.last_error && (
-              <p className="text-xs text-red-600">Error: {status.last_error}</p>
+              <p className="text-xs text-red-600 dark:text-red-400">Error: {status.last_error}</p>
             )}
           </div>
         )}
@@ -172,9 +172,9 @@ export function EmailFinderCard({ provider, status, onSave, onRemove }: EmailFin
                     onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Find these in your{' '}
-                  <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
                     Snov.io API settings
                   </a>
                 </p>
@@ -249,7 +249,7 @@ export function EmailFinderCard({ provider, status, onSave, onRemove }: EmailFin
               href={provider.signupUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2 h-7 text-xs text-blue-600 hover:underline border border-input rounded-md bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center gap-1 px-2 h-7 text-xs text-blue-600 dark:text-blue-400 hover:underline border border-input rounded-md bg-background hover:bg-accent transition-colors"
             >
               Get Free Key
               <ExternalLink className="h-2.5 w-2.5" />

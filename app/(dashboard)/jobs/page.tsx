@@ -176,7 +176,7 @@ export default function JobsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-gray-500">Loading jobs...</p>
+        <p className="text-muted-foreground">Loading jobs...</p>
       </div>
     )
   }
@@ -191,17 +191,17 @@ export default function JobsPage() {
 
       <div className="flex-1 overflow-auto">
         <Tabs defaultValue="kanban" className="h-full flex flex-col">
-          <div className="border-b bg-white px-8">
+          <div className="border-b bg-background px-8">
             <TabsList className="h-auto p-0 bg-transparent gap-0">
               <TabsTrigger
                 value="kanban"
-                className="rounded-none border-b-2 border-transparent data-active:border-gray-900 data-active:bg-transparent pb-3 pt-2"
+                className="rounded-none border-b-2 border-transparent data-active:border-foreground data-active:bg-transparent pb-3 pt-2"
               >
                 Kanban Board
               </TabsTrigger>
               <TabsTrigger
                 value="list"
-                className="rounded-none border-b-2 border-transparent data-active:border-gray-900 data-active:bg-transparent pb-3 pt-2"
+                className="rounded-none border-b-2 border-transparent data-active:border-foreground data-active:bg-transparent pb-3 pt-2"
               >
                 List View
               </TabsTrigger>
@@ -212,10 +212,10 @@ export default function JobsPage() {
             {filteredJobs.length === 0 ? (
               <div className="flex h-full items-center justify-center py-24">
                 <div className="text-center">
-                  <p className="text-gray-500 font-medium">
+                  <p className="text-muted-foreground font-medium">
                     {searchQuery ? 'No jobs match your search' : 'No jobs captured yet'}
                   </p>
-                  <p className="mt-2 text-sm text-gray-400">
+                  <p className="mt-2 text-sm text-muted-foreground/70">
                     Use the Chrome extension to capture jobs from LinkedIn!
                   </p>
                 </div>

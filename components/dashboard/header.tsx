@@ -23,19 +23,19 @@ export function Header({
   onSearch,
 }: HeaderProps) {
   return (
-    <div className="border-b bg-white px-8 py-6">
+    <div className="border-b bg-background px-8 py-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
           {description && (
-            <p className="mt-1 text-sm text-gray-500">{description}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
           )}
         </div>
 
         <div className="flex items-center gap-4">
           {showSearch && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search jobs..."
                 className="w-64 pl-10"

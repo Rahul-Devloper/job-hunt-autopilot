@@ -159,7 +159,7 @@ export default function SettingsPage() {
           description="Configure your account and integrations"
         />
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -180,7 +180,7 @@ export default function SettingsPage() {
                 <CardTitle>Account</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-muted-foreground">
                   <span className="font-medium">Signed in as:</span> {userEmail}
                 </p>
               </CardContent>
@@ -198,15 +198,15 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Summary */}
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 text-sm">
+              <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/25">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="text-blue-800 dark:text-blue-200 text-sm">
                   <strong>
                     Up to {TOTAL_FREE_CREDITS} free searches/month
                   </strong>{" "}
                   when all 3 providers are connected.
                   {connectedCount > 0 && (
-                    <span className="ml-1 text-blue-700">
+                    <span className="ml-1 text-blue-700 dark:text-blue-300">
                       ({connectedCount} of {EMAIL_FINDER_PROVIDERS.length}{" "}
                       connected)
                     </span>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {detailsSaved && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-500/10 dark:text-green-300">
                   <Check className="h-4 w-4 shrink-0" />
                   Details saved
                 </div>
@@ -267,7 +267,7 @@ export default function SettingsPage() {
                   onChange={(e) => setContactLine(e.target.value)}
                   placeholder="linkedin.com/in/johndoe | github.com/John-Doe"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Appended below your name in the email sign-off.
                 </p>
               </div>
@@ -300,7 +300,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {summarySaved && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-500/10 dark:text-green-300">
                   <Check className="h-4 w-4 shrink-0" />
                   Summary saved
                 </div>
