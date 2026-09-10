@@ -7,7 +7,8 @@
     "debug": "cross-env NODE_OPTIONS=--inspect next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test --no-warnings \"lib/**/*.test.mts\""
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

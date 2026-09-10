@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { sendTrackedEmail } from '@/lib/email-sending-service'
 import { sendEmailSchema } from '@/lib/validation/schemas'
 import { ValidationError } from '@/lib/errors/app-error'
+import { formatBodyForHtml } from '@/lib/email-body-format'
 import crypto from 'crypto'
 
 function generateTrackingId(): string {
@@ -47,36 +48,6 @@ async function extractOverrideAttachments(
     attachments.push({ filename: file.name, content: buffer })
   }
   return attachments
-}
-
-/**
- * Convert the plain-text draft body into spaced HTML. Blank lines are
- * skipped — spacing comes only from block margins below, never from both
- * <br> and margins at once, or gaps double up. Bullets stay tightly grouped;
- * paragraphs get clear separation.
- */
-function formatBodyForHtml(body: string): string {
-  const formatted = body.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-
-  const lines = formatted.split('\n').map(l => l.trim())
-  const html: string[] = []
-
-  for (const line of lines) {
-    if (line === '') {
-      // skip blank lines — spacing is handled by block margins, not <br>
-      continue
-    }
-
-    if (line.startsWith('•') || line.startsWith('-')) {
-      // bullets: tight spacing within the group
-      html.push(`<div style="margin: 2px 0;">${line}</div>`)
-    } else {
-      // paragraphs: normal spacing
-      html.push(`<div style="margin: 0 0 12px 0;">${line}</div>`)
-    }
-  }
-
-  return html.join('')
 }
 
 async function createTrackedLinkedIn(

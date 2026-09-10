@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Info, X, UserPlus, Send, Loader2, Sparkles, Upload, FileText, Undo2, AlertTriangle } from 'lucide-react'
+import { formatBodyForHtml } from '@/lib/email-body-format'
 import type { Job } from '@/types'
 import type { JobContact, UserDocument } from '@/lib/repositories'
 
@@ -307,6 +308,9 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
       /{hr_name}/g,
       primaryContact?.contact_name || job.hr_name || `${job.company_name} hiring team`
     )
+  // Render the preview through the same formatter the send route uses, so
+  // linkified URLs, bold, and spacing match what the recipient will get.
+  const previewHtml = formatBodyForHtml(previewBody)
 
   // --- send ---
 
@@ -639,7 +643,10 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
           {/* ── Preview ── */}
           <div className='rounded-lg border bg-muted/50 p-3'>
             <p className='mb-2 text-sm font-medium text-foreground'>Preview:</p>
-            <div className='whitespace-pre-wrap text-sm text-foreground'>{previewBody}</div>
+            <div
+              className='text-sm text-foreground [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400'
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
           </div>
         </div>
 
