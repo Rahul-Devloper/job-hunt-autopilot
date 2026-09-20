@@ -18,6 +18,58 @@ async function getApiUrl() {
 console.log('%c🎯 Job Hunt Autopilot Active', 'color: #00ff00; font-weight: bold; font-size: 16px;')
 
 /**
+ * Resilience layer for DOM extraction.
+ *
+ * LinkedIn's HTML shifts (randomized/hashed class names) without warning, and until now that
+ * broke extraction silently. This is the single place that tries an ordered list of extraction
+ * strategies for one field, logs which one worked (or that all of them failed), and reports a
+ * per-field confidence so the caller can decide whether the overall capture is trustworthy.
+ *
+ * `tiers` is ordered most-stable to least-stable:
+ *   - 'stable'      structural/semantic selectors (data-test-*, href patterns) — least likely to break
+ *   - 'known'       current hard-coded class names — may break on any LinkedIn redesign
+ *   - 'last-resort' degraded-confidence structural guesses (e.g. "first <h1> on page") — logged
+ *                   loudly so a human knows this tier firing means "go check this field"
+ *
+ * Each tier's `run()` returns a string (possibly empty) or null/undefined if nothing matched.
+ * Returns { value, confidence, tier } — confidence is 'ok' for stable/known, 'degraded' for
+ * last-resort, 'failed' if every tier came back empty/null.
+ */
+function jhaExtract(fieldName, tiers) {
+  for (const t of tiers) {
+    let raw
+    try {
+      raw = t.run()
+    } catch (e) {
+      console.error(`[JHA-SCRAPER] ${fieldName}: tier "${t.label}" (${t.tier}) threw an error:`, e)
+      continue
+    }
+
+    if (raw === null || raw === undefined) {
+      console.debug(`[JHA-SCRAPER] ${fieldName}: tier "${t.label}" (${t.tier}) — not found`)
+      continue
+    }
+
+    const value = typeof raw === 'string' ? raw.trim() : raw
+    if (value === '') {
+      console.warn(`[JHA-SCRAPER] ${fieldName}: tier "${t.label}" (${t.tier}) matched an element but its text was EMPTY — trying next tier`)
+      continue
+    }
+
+    const confidence = t.tier === 'last-resort' ? 'degraded' : 'ok'
+    if (t.tier === 'last-resort') {
+      console.warn(`[JHA-SCRAPER] ${fieldName}: DEGRADED — only the last-resort tier "${t.label}" matched:`, value)
+    } else {
+      console.log(`[JHA-SCRAPER] ${fieldName}: found via "${t.label}" [${t.tier}]:`, value)
+    }
+    return { value, confidence, tier: t.label }
+  }
+
+  console.error(`[JHA-SCRAPER] ${fieldName}: FAILED — every selector in the fallback chain came back empty or missing. LinkedIn's markup may have changed.`)
+  return { value: null, confidence: 'failed', tier: null }
+}
+
+/**
  * Listen for token sent from the web app's /extension page
  */
 window.addEventListener('message', function (event) {
@@ -416,162 +468,194 @@ function extractPosterData() {
   }
 }
 
+function cleanCompanyLinkedInHref(href) {
+  if (!href || !href.includes('linkedin.com/company/')) return null
+  const match = href.match(/(https:\/\/www\.linkedin\.com\/company\/[^/?]+)/)
+  return match ? match[1] : null
+}
+
 function extractCompanyLinkedInUrl() {
   try {
-    const selectors = [
-      '.job-details-jobs-unified-top-card__company-name a',
-      '.jobs-unified-top-card__company-name a',
-      'a[href*="linkedin.com/company/"]',
-      '.topcard__org-name-link',
-    ]
+    // No text fallback here on purpose: guessing a company URL from page text risks fabricating
+    // a wrong link (worse than returning null), so this chain is selectors only.
+    const result = jhaExtract('company_linkedin_url', [
+      { tier: 'stable', label: 'a[href*="linkedin.com/company/"]', run: () => cleanCompanyLinkedInHref(document.querySelector('a[href*="linkedin.com/company/"]')?.href) },
+      { tier: 'known', label: '.job-details-jobs-unified-top-card__company-name a', run: () => cleanCompanyLinkedInHref(document.querySelector('.job-details-jobs-unified-top-card__company-name a')?.href) },
+      { tier: 'known', label: '.jobs-unified-top-card__company-name a', run: () => cleanCompanyLinkedInHref(document.querySelector('.jobs-unified-top-card__company-name a')?.href) },
+      { tier: 'known', label: '.topcard__org-name-link', run: () => cleanCompanyLinkedInHref(document.querySelector('.topcard__org-name-link')?.href) },
+    ])
 
-    for (const selector of selectors) {
-      const el = document.querySelector(selector)
-      const href = el?.href
-      if (href && href.includes('linkedin.com/company/')) {
-        const match = href.match(/(https:\/\/www\.linkedin\.com\/company\/[^/?]+)/)
-        if (match) {
-          console.log('[JHA] Company LinkedIn URL:', match[1])
-          return match[1]
-        }
-      }
-    }
-
-    console.log('[JHA] Company LinkedIn URL not found')
-    return null
+    return result.value
   } catch (e) {
-    console.error('[JHA] extractCompanyLinkedInUrl error:', e)
+    console.error('[JHA-SCRAPER] extractCompanyLinkedInUrl: unexpected error:', e)
     return null
   }
 }
 
 function extractJobData() {
   try {
-    console.log('Job Hunt Autopilot: Starting data extraction...')
+    console.log('[JHA-SCRAPER] Starting data extraction...')
 
     // ── Company name ─────────────────────────────────────────────────────────
-    const companySelectors = [
-      '.job-details-jobs-unified-top-card__company-name a',
-      '.job-details-jobs-unified-top-card__company-name',
-      '.jobs-unified-top-card__company-name a',
-      '.jobs-unified-top-card__company-name',
-      '[data-test-id="job-details-company-name"]',
-      '.topcard__org-name-link',
-      '.topcard__flavor a',
-      '.jobs-details-top-card__company-url',
-      'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
-      'a[href*="/company/"]',
-    ]
+    // Priority 1 (stable): data-test-* attribute and href-pattern anchors.
+    // Priority 2 (known): current hard-coded LinkedIn class names — may break on any redesign.
+    // Priority 3 (last-resort): og:title / page <title> text parsing — degraded confidence.
+    const companyResult = jhaExtract('company_name', [
+      { tier: 'stable', label: '[data-test-id="job-details-company-name"]', run: () => document.querySelector('[data-test-id="job-details-company-name"]')?.textContent },
+      { tier: 'stable', label: 'a[data-tracking-control-name="public_jobs_topcard-org-name"]', run: () => document.querySelector('a[data-tracking-control-name="public_jobs_topcard-org-name"]')?.textContent },
+      { tier: 'stable', label: 'a[href*="/company/"]', run: () => document.querySelector('a[href*="/company/"]')?.textContent },
+      { tier: 'known', label: '.job-details-jobs-unified-top-card__company-name a', run: () => document.querySelector('.job-details-jobs-unified-top-card__company-name a')?.textContent },
+      { tier: 'known', label: '.job-details-jobs-unified-top-card__company-name', run: () => document.querySelector('.job-details-jobs-unified-top-card__company-name')?.textContent },
+      { tier: 'known', label: '.jobs-unified-top-card__company-name a', run: () => document.querySelector('.jobs-unified-top-card__company-name a')?.textContent },
+      { tier: 'known', label: '.jobs-unified-top-card__company-name', run: () => document.querySelector('.jobs-unified-top-card__company-name')?.textContent },
+      { tier: 'known', label: '.topcard__org-name-link', run: () => document.querySelector('.topcard__org-name-link')?.textContent },
+      { tier: 'known', label: '.topcard__flavor a', run: () => document.querySelector('.topcard__flavor a')?.textContent },
+      { tier: 'known', label: '.jobs-details-top-card__company-url', run: () => document.querySelector('.jobs-details-top-card__company-url')?.textContent },
+      {
+        tier: 'last-resort',
+        label: 'og:title meta ("Title at Company")',
+        run: () => {
+          const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content')
+          return ogTitle && ogTitle.includes(' at ') ? ogTitle.split(' at ').pop() : null
+        },
+      },
+      {
+        tier: 'last-resort',
+        label: 'document.title ("Title at Company | LinkedIn")',
+        run: () => (document.title.includes(' at ') ? document.title.split(' at ')[1]?.split('|')[0] : null),
+      },
+    ])
+    const companyName = companyResult.value || ''
 
-    let companyName = ''
-    let companyElement = null
-    for (const sel of companySelectors) {
-      const el = document.querySelector(sel)
-      const text = el?.textContent?.trim() || el?.innerText?.trim()
-      if (text && text.length > 0) {
-        companyName = text
-        companyElement = el
-        console.log(`[JHA] Company via selector "${sel}":`, companyName)
-        break
-      }
-    }
-
-    // og:title fallback: "Job Title at Company Name"
-    if (!companyName) {
-      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content')
-      if (ogTitle && ogTitle.includes(' at ')) {
-        const company = ogTitle.split(' at ').pop()?.trim()
-        if (company) { companyName = company; console.log('[JHA] Company via og:title:', companyName) }
-      }
-    }
-
-    // Page title fallback: "Title at Company | LinkedIn"
-    if (!companyName && document.title.includes(' at ')) {
-      const company = document.title.split(' at ')[1]?.split('|')[0]?.trim()
-      if (company) { companyName = company; console.log('[JHA] Company via page title:', companyName) }
-    }
-
-    // Extract domain from company /company/ URL
+    // Company domain is derived from whichever selector matched an <a href="…/company/…">
+    // above — best-effort supplementary field, not part of extraction_confidence.
+    const companyLinkEl = document.querySelector(
+      '[data-test-id="job-details-company-name"] a, a[data-tracking-control-name="public_jobs_topcard-org-name"], a[href*="/company/"]'
+    )
     let companyDomain = ''
-    if (companyElement && companyElement.href) {
-      const match = companyElement.href.match(/linkedin\.com\/company\/([^/?]+)/)
+    if (companyLinkEl?.href) {
+      const match = companyLinkEl.href.match(/linkedin\.com\/company\/([^/?]+)/)
       if (match) companyDomain = match[1] + '.com'
     }
-    console.log('Company domain:', companyDomain)
+    console.log('[JHA-SCRAPER] company_domain (derived, best-effort):', companyDomain || null)
 
     // ── Job title ─────────────────────────────────────────────────────────────
-    const titleSelectors = [
-      '.job-details-jobs-unified-top-card__job-title h1',
-      '.job-details-jobs-unified-top-card__job-title',
-      '.jobs-unified-top-card__job-title h1',
-      '.jobs-unified-top-card__job-title',
-      '.topcard__title',
-      '[data-test-id="job-details-job-title"]',
-      'h1.t-24',
-      'h1',
-    ]
+    const titleResult = jhaExtract('job_title', [
+      { tier: 'stable', label: '[data-test-id="job-details-job-title"]', run: () => document.querySelector('[data-test-id="job-details-job-title"]')?.textContent },
+      { tier: 'known', label: '.job-details-jobs-unified-top-card__job-title h1', run: () => document.querySelector('.job-details-jobs-unified-top-card__job-title h1')?.textContent },
+      { tier: 'known', label: '.job-details-jobs-unified-top-card__job-title', run: () => document.querySelector('.job-details-jobs-unified-top-card__job-title')?.textContent },
+      { tier: 'known', label: '.jobs-unified-top-card__job-title h1', run: () => document.querySelector('.jobs-unified-top-card__job-title h1')?.textContent },
+      { tier: 'known', label: '.jobs-unified-top-card__job-title', run: () => document.querySelector('.jobs-unified-top-card__job-title')?.textContent },
+      { tier: 'known', label: '.topcard__title', run: () => document.querySelector('.topcard__title')?.textContent },
+      { tier: 'known', label: 'h1.t-24', run: () => document.querySelector('h1.t-24')?.textContent },
+      {
+        tier: 'last-resort',
+        label: 'div[data-display-contents] > p (not inside <a>)',
+        run: () => {
+          for (const p of document.querySelectorAll('div[data-display-contents] > p')) {
+            if (!p.closest('a')) return p.textContent
+          }
+          return null
+        },
+      },
+      { tier: 'last-resort', label: 'first <h1> on page', run: () => document.querySelector('h1')?.textContent },
+    ])
+    const jobTitle = titleResult.value || ''
 
-    let jobTitle = ''
-    for (const sel of titleSelectors) {
-      const el = document.querySelector(sel)
-      const text = el?.textContent?.trim() || el?.innerText?.trim()
-      if (text && text.length > 2) {
-        jobTitle = text
-        console.log(`[JHA] Title via selector "${sel}":`, jobTitle)
-        break
-      }
-    }
-
-    // Fallback: <p> that is a direct child of div[data-display-contents] and not inside <a>
-    if (!jobTitle) {
-      for (const p of document.querySelectorAll('div[data-display-contents] > p')) {
-        if (!p.closest('a')) {
-          const text = p.innerText?.trim()
-          if (text && text.length > 2) { jobTitle = text; break }
-        }
-      }
-    }
-
-    console.log('Job title:', jobTitle)
-
-    // Job URL
+    // Job URL — not selector-based, no fallback chain needed.
     const jobUrl = window.location.href.split('?')[0]
-    console.log('Job URL:', jobUrl)
+    console.log('[JHA-SCRAPER] job_url:', jobUrl)
 
-    // Location
-    const locationElement = document.querySelector('span.ad41daa7')
-    const location = locationElement?.innerText?.trim() || ''
-    console.log('Location:', location)
+    // ── Location ──────────────────────────────────────────────────────────────
+    // No known stable LinkedIn attribute for this field today. The current hashed class
+    // (span.ad41daa7) is demoted from "primary strategy" (it should never have held that
+    // position) to a 'known' tier, tried before brand-new structural guesses that are
+    // NOT verified against a live LinkedIn page this session — flagged loudly if they fire.
+    const locationResult = jhaExtract('location', [
+      { tier: 'known', label: 'span.ad41daa7 (hashed class, currently observed)', run: () => document.querySelector('span.ad41daa7')?.textContent },
+      {
+        tier: 'last-resort',
+        label: 'text node near a location-labeled icon (UNVERIFIED)',
+        run: () => document.querySelector('[aria-label*="ocation" i] + span, svg[aria-label*="ocation" i] ~ span')?.textContent,
+      },
+      {
+        tier: 'last-resort',
+        label: '.job-details-jobs-unified-top-card__primary-description-container (UNVERIFIED)',
+        run: () => document.querySelector('.job-details-jobs-unified-top-card__primary-description-container')?.textContent,
+      },
+    ])
+    const location = locationResult.value || ''
 
-    // Salary - regex scan for currency pattern in page text
+    // ── Salary ────────────────────────────────────────────────────────────────
+    // Regex scan of body text rather than a selector — inherently resistant to class renames,
+    // but not to LinkedIn changing the wording. No further tiers invented here; there's nothing
+    // more structural to try without guessing.
     let salary = null
     const salaryMatch = document.body.innerText.match(/Salary\s+(£|\$)[\d,k\-\s]+/i)
-    if (salaryMatch) salary = salaryMatch[0].trim()
-    console.log('Salary:', salary)
+    if (salaryMatch) {
+      salary = salaryMatch[0].trim()
+      console.log('[JHA-SCRAPER] salary: found via body-text regex scan [known]:', salary)
+    } else {
+      console.warn('[JHA-SCRAPER] salary: FAILED — regex scan found no match. LinkedIn wording may have changed, or this job has no listed salary (expected/common).')
+    }
 
-    // Job description
-    const descriptionElement = document.querySelector('span[data-testid="expandable-text-box"]')
-    const jobDescription = descriptionElement?.innerText?.trim() || ''
-    console.log('Description length:', jobDescription.length, 'characters')
+    // ── Job description ──────────────────────────────────────────────────────
+    // The existing data-testid selector is already a good, stable signal (priority-1 per the
+    // resilience playbook) — kept as 'stable'. One last-resort tier added, unverified.
+    const descriptionResult = jhaExtract('job_description', [
+      { tier: 'stable', label: 'span[data-testid="expandable-text-box"]', run: () => document.querySelector('span[data-testid="expandable-text-box"]')?.textContent },
+      {
+        tier: 'last-resort',
+        label: 'largest text block under jobs-details container (UNVERIFIED)',
+        run: () => {
+          const candidates = [...document.querySelectorAll('.jobs-details *')]
+            .filter(el => el.children.length === 0 && (el.textContent?.length || 0) > 200)
+          if (candidates.length === 0) return null
+          return candidates.reduce((a, b) => (a.textContent.length > b.textContent.length ? a : b)).textContent
+        },
+      },
+    ])
+    const jobDescription = descriptionResult.value || ''
+
+    // ── Job-level extraction confidence ──────────────────────────────────────
+    // Computed from the two CRITICAL fields only (company name, job title), per the
+    // resilience-layer spec. Location/salary/description/poster failures are common and
+    // expected (e.g. many listings have no salary) and would make "degraded" too noisy to be
+    // a useful signal if they counted — poster is explicitly a Tier 2 signal already.
+    let extractionConfidence = 'ok'
+    if (companyResult.confidence === 'failed' || titleResult.confidence === 'failed') {
+      extractionConfidence = 'failed'
+    } else if (companyResult.confidence === 'degraded' || titleResult.confidence === 'degraded') {
+      extractionConfidence = 'degraded'
+    }
+
+    // Fragility summary — which fields fell back furthest this capture. Cheap to compute,
+    // read this first the next time LinkedIn changes something.
+    console.log('[JHA-SCRAPER] === Extraction summary ===', {
+      company_name: { tier: companyResult.tier, confidence: companyResult.confidence },
+      job_title: { tier: titleResult.tier, confidence: titleResult.confidence },
+      location: { tier: locationResult.tier, confidence: locationResult.confidence },
+      job_description: { tier: descriptionResult.tier, confidence: descriptionResult.confidence },
+      overall: extractionConfidence,
+    })
+
+    if (extractionConfidence !== 'ok') {
+      console.warn(`[JHA-SCRAPER] ⚠️ CAPTURE CONFIDENCE: ${extractionConfidence.toUpperCase()} — one or more critical fields did not come from a known-good selector. Check the summary above.`)
+    }
 
     // Validate required fields
     if (!companyName || !jobTitle || !jobUrl) {
-      console.error('Missing required fields:', { companyName, jobTitle, jobUrl })
-      console.log('=== DEBUG ===')
-      console.log('og:title:', document.querySelector('meta[property="og:title"]')?.getAttribute('content'))
-      console.log('page title:', document.title)
-      console.log('First h1:', document.querySelector('h1')?.innerText)
-      console.log('First p:', document.querySelector('p')?.innerText)
+      console.error('[JHA-SCRAPER] Missing required fields:', { companyName, jobTitle, jobUrl })
       throw new Error('Missing required job data. Company: ' + !!companyName + ', Title: ' + !!jobTitle)
     }
 
-    // Poster data — fault-tolerant, never throws
+    // Poster data — fault-tolerant, never throws. Tier 2 signal: never affects extraction_confidence.
     let posterData = { poster_name: null, poster_title: null, poster_linkedin_url: null }
     try {
       posterData = extractPosterData()
-      console.log('Poster data:', posterData)
+      console.log('[JHA-SCRAPER] poster data:', posterData)
     } catch {
-      console.warn('Job Hunt Autopilot: Poster extraction failed (non-fatal)')
+      console.warn('[JHA-SCRAPER] Poster extraction failed (non-fatal, Tier 2 signal)')
     }
 
     const result = {
@@ -587,13 +671,14 @@ function extractJobData() {
       poster_name: posterData.poster_name,
       poster_title: posterData.poster_title,
       poster_linkedin_url: posterData.poster_linkedin_url,
+      extraction_confidence: extractionConfidence,
     }
 
-    console.log('Job Hunt Autopilot: Successfully extracted data:', result)
+    console.log('[JHA-SCRAPER] Successfully extracted data:', result)
     return result
 
   } catch (error) {
-    console.error('Job Hunt Autopilot: Error extracting job data:', error)
+    console.error('[JHA-SCRAPER] Error extracting job data:', error)
     throw error
   }
 }

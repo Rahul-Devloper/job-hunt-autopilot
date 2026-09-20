@@ -36,3 +36,4 @@ export type UserStatsUpdate = Database['public']['Tables']['user_stats']['Update
 export type JobStatus = Database['public']['Enums']['job_status']
 export type EmailSource = Database['public']['Enums']['email_source']
 export type EmailType = Database['public']['Enums']['email_type']
+export type ExtractionConfidence = Database['public']['Enums']['extraction_confidence']

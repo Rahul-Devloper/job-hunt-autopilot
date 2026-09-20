@@ -23,6 +23,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { ContactList } from '@/components/dashboard/contact-list'
+import { ExtractionConfidenceBadge } from '@/components/dashboard/extraction-confidence-badge'
 import type { Job, JobStatus } from '@/types'
 
 interface JobCardProps {
@@ -175,6 +176,7 @@ export function JobCard({
                   Generic
                 </Badge>
               )}
+              <ExtractionConfidenceBadge confidence={job.extraction_confidence} />
             </div>
 
             <div className="mt-3 flex gap-2 flex-wrap">

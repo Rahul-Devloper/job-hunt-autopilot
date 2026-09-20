@@ -17,6 +17,9 @@ const JobSchema = z.object({
   poster_name: z.string().nullable().optional(),
   poster_title: z.string().nullable().optional(),
   poster_linkedin_url: z.string().nullable().optional(),
+  // Not sent by this route's callers today (session-auth web flow, not the scraper) — defaults
+  // to 'ok' so every job in the jobs table has a value, per the scraper-resilience feature.
+  extraction_confidence: z.enum(['ok', 'degraded', 'failed']).default('ok'),
   // Optional: extension sends this after user logs in via web
   user_id: z.string().uuid().optional(),
 })

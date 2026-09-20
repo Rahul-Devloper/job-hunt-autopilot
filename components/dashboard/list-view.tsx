@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { statusColors, statusLabels } from './job-card'
+import { ExtractionConfidenceBadge } from '@/components/dashboard/extraction-confidence-badge'
 import type { Job } from '@/types'
 
 interface ListViewProps {
@@ -58,6 +59,7 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, onManualEma
                       {job.company_name.substring(0, 2).toUpperCase()}
                     </div>
                     <span className="font-medium text-foreground">{job.company_name}</span>
+                    <ExtractionConfidenceBadge confidence={job.extraction_confidence} />
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-foreground max-w-xs truncate">

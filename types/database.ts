@@ -4,751 +4,758 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
 export type Database = {
   public: {
     Tables: {
       user_api_keys: {
         Row: {
-          id: string
-          user_id: string
-          email_finder_keys: Json | null
-          apollo_api_key: string | null
-          hunter_api_key: string | null
-          apollo_credits_remaining: number | null
-          hunter_credits_remaining: number | null
-          last_checked_at: string | null
-          updated_at: string
-          created_at: string
-        }
+          id: string;
+          user_id: string;
+          email_finder_keys: Json | null;
+          apollo_api_key: string | null;
+          hunter_api_key: string | null;
+          apollo_credits_remaining: number | null;
+          hunter_credits_remaining: number | null;
+          last_checked_at: string | null;
+          updated_at: string;
+          created_at: string;
+        };
         Insert: {
-          id?: string
-          user_id: string
-          email_finder_keys?: Json | null
-          apollo_api_key?: string | null
-          hunter_api_key?: string | null
-          apollo_credits_remaining?: number | null
-          hunter_credits_remaining?: number | null
-          last_checked_at?: string | null
-          updated_at?: string
-          created_at?: string
-        }
+          id?: string;
+          user_id: string;
+          email_finder_keys?: Json | null;
+          apollo_api_key?: string | null;
+          hunter_api_key?: string | null;
+          apollo_credits_remaining?: number | null;
+          hunter_credits_remaining?: number | null;
+          last_checked_at?: string | null;
+          updated_at?: string;
+          created_at?: string;
+        };
         Update: {
-          id?: string
-          user_id?: string
-          email_finder_keys?: Json | null
-          apollo_api_key?: string | null
-          hunter_api_key?: string | null
-          apollo_credits_remaining?: number | null
-          hunter_credits_remaining?: number | null
-          last_checked_at?: string | null
-          updated_at?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          user_id?: string;
+          email_finder_keys?: Json | null;
+          apollo_api_key?: string | null;
+          hunter_api_key?: string | null;
+          apollo_credits_remaining?: number | null;
+          hunter_credits_remaining?: number | null;
+          last_checked_at?: string | null;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       contact_discovery_logs: {
         Row: {
-          id: string
-          user_id: string
-          job_id: string
-          method: 'apollo' | 'hunter' | 'manual' | 'combined' | null
-          contacts_found: number
-          api_calls_made: number
-          credits_used: number
-          success: boolean
-          error_message: string | null
-          providers: string[] | null
-          created_at: string
-        }
+          id: string;
+          user_id: string;
+          job_id: string;
+          method: "apollo" | "hunter" | "manual" | "combined" | null;
+          contacts_found: number;
+          api_calls_made: number;
+          credits_used: number;
+          success: boolean;
+          error_message: string | null;
+          providers: string[] | null;
+          created_at: string;
+        };
         Insert: {
-          id?: string
-          user_id: string
-          job_id: string
-          method?: 'apollo' | 'hunter' | 'manual' | 'combined' | null
-          contacts_found?: number
-          api_calls_made?: number
-          credits_used?: number
-          success?: boolean
-          error_message?: string | null
-          providers?: string[] | null
-          created_at?: string
-        }
+          id?: string;
+          user_id: string;
+          job_id: string;
+          method?: "apollo" | "hunter" | "manual" | "combined" | null;
+          contacts_found?: number;
+          api_calls_made?: number;
+          credits_used?: number;
+          success?: boolean;
+          error_message?: string | null;
+          providers?: string[] | null;
+          created_at?: string;
+        };
         Update: {
-          id?: string
-          user_id?: string
-          job_id?: string
-          method?: 'apollo' | 'hunter' | 'manual' | 'combined' | null
-          contacts_found?: number
-          api_calls_made?: number
-          credits_used?: number
-          success?: boolean
-          error_message?: string | null
-          providers?: string[] | null
-          created_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          user_id?: string;
+          job_id?: string;
+          method?: "apollo" | "hunter" | "manual" | "combined" | null;
+          contacts_found?: number;
+          api_calls_made?: number;
+          credits_used?: number;
+          success?: boolean;
+          error_message?: string | null;
+          providers?: string[] | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       job_contacts: {
         Row: {
-          id: string
-          job_id: string
-          user_id: string
-          email: string
-          contact_name: string | null
-          contact_role: string | null
+          id: string;
+          job_id: string;
+          user_id: string;
+          email: string;
+          contact_name: string | null;
+          contact_role: string | null;
           contact_source:
-            | 'linkedin'
-            | 'manual'
-            | 'company_website'
-            | 'referral'
-            | 'auto'
-            | 'poster'
-            | 'linkedin_people'
-            | null
-          notes: string | null
-          is_primary: boolean
-          is_poster: boolean
-          emails_sent: number
-          emails_opened: number
-          emails_clicked: number
-          emails_replied: number
-          last_contacted_at: string | null
-          first_response_at: string | null
-          created_at: string
-          updated_at: string
-        }
+            | "linkedin"
+            | "manual"
+            | "company_website"
+            | "referral"
+            | "auto"
+            | "poster"
+            | "linkedin_people"
+            | null;
+          notes: string | null;
+          is_primary: boolean;
+          is_poster: boolean;
+          emails_sent: number;
+          emails_opened: number;
+          emails_clicked: number;
+          emails_replied: number;
+          last_contacted_at: string | null;
+          first_response_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?: string
-          job_id: string
-          user_id: string
-          email: string
-          contact_name?: string | null
-          contact_role?: string | null
+          id?: string;
+          job_id: string;
+          user_id: string;
+          email: string;
+          contact_name?: string | null;
+          contact_role?: string | null;
           contact_source?:
-            | 'linkedin'
-            | 'manual'
-            | 'company_website'
-            | 'referral'
-            | 'auto'
-            | 'poster'
-            | 'linkedin_people'
-            | null
-          notes?: string | null
-          is_primary?: boolean
-          is_poster?: boolean
-          emails_sent?: number
-          emails_opened?: number
-          emails_clicked?: number
-          emails_replied?: number
-          last_contacted_at?: string | null
-          first_response_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
+            | "linkedin"
+            | "manual"
+            | "company_website"
+            | "referral"
+            | "auto"
+            | "poster"
+            | "linkedin_people"
+            | null;
+          notes?: string | null;
+          is_primary?: boolean;
+          is_poster?: boolean;
+          emails_sent?: number;
+          emails_opened?: number;
+          emails_clicked?: number;
+          emails_replied?: number;
+          last_contacted_at?: string | null;
+          first_response_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          id?: string
-          job_id?: string
-          user_id?: string
-          email?: string
-          contact_name?: string | null
-          contact_role?: string | null
+          id?: string;
+          job_id?: string;
+          user_id?: string;
+          email?: string;
+          contact_name?: string | null;
+          contact_role?: string | null;
           contact_source?:
-            | 'linkedin'
-            | 'manual'
-            | 'company_website'
-            | 'referral'
-            | 'auto'
-            | 'poster'
-            | 'linkedin_people'
-            | null
-          notes?: string | null
-          is_primary?: boolean
-          is_poster?: boolean
-          emails_sent?: number
-          emails_opened?: number
-          emails_clicked?: number
-          emails_replied?: number
-          last_contacted_at?: string | null
-          first_response_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
+            | "linkedin"
+            | "manual"
+            | "company_website"
+            | "referral"
+            | "auto"
+            | "poster"
+            | "linkedin_people"
+            | null;
+          notes?: string | null;
+          is_primary?: boolean;
+          is_poster?: boolean;
+          emails_sent?: number;
+          emails_opened?: number;
+          emails_clicked?: number;
+          emails_replied?: number;
+          last_contacted_at?: string | null;
+          first_response_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: 'job_contacts_job_id_fkey'
-            columns: ['job_id']
-            isOneToOne: false
-            referencedRelation: 'jobs'
-            referencedColumns: ['id']
+            foreignKeyName: "job_contacts_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       user_email_accounts: {
         Row: {
-          id: string
-          user_id: string
-          email_address: string
-          provider_name: string | null
-          smtp_host: string
-          smtp_port: number
-          smtp_secure: boolean
-          smtp_user: string
-          smtp_password_encrypted: string
-          is_verified: boolean
-          is_primary: boolean
-          last_used_at: string | null
-          created_at: string
-          updated_at: string
-        }
+          id: string;
+          user_id: string;
+          email_address: string;
+          provider_name: string | null;
+          smtp_host: string;
+          smtp_port: number;
+          smtp_secure: boolean;
+          smtp_user: string;
+          smtp_password_encrypted: string;
+          is_verified: boolean;
+          is_primary: boolean;
+          last_used_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?: string
-          user_id: string
-          email_address: string
-          provider_name?: string | null
-          smtp_host: string
-          smtp_port: number
-          smtp_secure: boolean
-          smtp_user: string
-          smtp_password_encrypted: string
-          is_verified?: boolean
-          is_primary?: boolean
-          last_used_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
+          id?: string;
+          user_id: string;
+          email_address: string;
+          provider_name?: string | null;
+          smtp_host: string;
+          smtp_port: number;
+          smtp_secure: boolean;
+          smtp_user: string;
+          smtp_password_encrypted: string;
+          is_verified?: boolean;
+          is_primary?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          id?: string
-          user_id?: string
-          email_address?: string
-          provider_name?: string | null
-          smtp_host?: string
-          smtp_port?: number
-          smtp_secure?: boolean
-          smtp_user?: string
-          smtp_password_encrypted?: string
-          is_verified?: boolean
-          is_primary?: boolean
-          last_used_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          user_id?: string;
+          email_address?: string;
+          provider_name?: string | null;
+          smtp_host?: string;
+          smtp_port?: number;
+          smtp_secure?: boolean;
+          smtp_user?: string;
+          smtp_password_encrypted?: string;
+          is_verified?: boolean;
+          is_primary?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       community_emails: {
         Row: {
-          company_domain: string
-          company_name: string | null
-          contributed_by: string | null
-          created_at: string | null
-          email: string
-          email_type: Database['public']['Enums']['email_type']
-          failed_count: number | null
-          id: string
-          updated_at: string | null
-          verified_count: number | null
-        }
+          company_domain: string;
+          company_name: string | null;
+          contributed_by: string | null;
+          created_at: string | null;
+          email: string;
+          email_type: Database["public"]["Enums"]["email_type"];
+          failed_count: number | null;
+          id: string;
+          updated_at: string | null;
+          verified_count: number | null;
+        };
         Insert: {
-          company_domain: string
-          company_name?: string | null
-          contributed_by?: string | null
-          created_at?: string | null
-          email: string
-          email_type?: Database['public']['Enums']['email_type']
-          failed_count?: number | null
-          id?: string
-          updated_at?: string | null
-          verified_count?: number | null
-        }
+          company_domain: string;
+          company_name?: string | null;
+          contributed_by?: string | null;
+          created_at?: string | null;
+          email: string;
+          email_type?: Database["public"]["Enums"]["email_type"];
+          failed_count?: number | null;
+          id?: string;
+          updated_at?: string | null;
+          verified_count?: number | null;
+        };
         Update: {
-          company_domain?: string
-          company_name?: string | null
-          contributed_by?: string | null
-          created_at?: string | null
-          email?: string
-          email_type?: Database['public']['Enums']['email_type']
-          failed_count?: number | null
-          id?: string
-          updated_at?: string | null
-          verified_count?: number | null
-        }
-        Relationships: []
-      }
+          company_domain?: string;
+          company_name?: string | null;
+          contributed_by?: string | null;
+          created_at?: string | null;
+          email?: string;
+          email_type?: Database["public"]["Enums"]["email_type"];
+          failed_count?: number | null;
+          id?: string;
+          updated_at?: string | null;
+          verified_count?: number | null;
+        };
+        Relationships: [];
+      };
       email_verifications: {
         Row: {
-          community_email_id: string
-          created_at: string | null
-          id: string
-          user_id: string
-          worked: boolean
-        }
+          community_email_id: string;
+          created_at: string | null;
+          id: string;
+          user_id: string;
+          worked: boolean;
+        };
         Insert: {
-          community_email_id: string
-          created_at?: string | null
-          id?: string
-          user_id: string
-          worked: boolean
-        }
+          community_email_id: string;
+          created_at?: string | null;
+          id?: string;
+          user_id: string;
+          worked: boolean;
+        };
         Update: {
-          community_email_id?: string
-          created_at?: string | null
-          id?: string
-          user_id?: string
-          worked?: boolean
-        }
+          community_email_id?: string;
+          created_at?: string | null;
+          id?: string;
+          user_id?: string;
+          worked?: boolean;
+        };
         Relationships: [
           {
-            foreignKeyName: 'email_verifications_community_email_id_fkey'
-            columns: ['community_email_id']
-            isOneToOne: false
-            referencedRelation: 'community_emails'
-            referencedColumns: ['id']
+            foreignKeyName: "email_verifications_community_email_id_fkey";
+            columns: ["community_email_id"];
+            isOneToOne: false;
+            referencedRelation: "community_emails";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       emails_sent: {
         Row: {
-          body: string
-          clicked_at: string | null
-          created_at: string | null
-          id: string
-          job_id: string
-          opened_at: string | null
-          replied_at: string | null
-          sent_at: string | null
-          subject: string
-          to_email: string
-          tracking_id: string
-          user_id: string
-        }
+          body: string;
+          clicked_at: string | null;
+          created_at: string | null;
+          id: string;
+          job_id: string;
+          opened_at: string | null;
+          replied_at: string | null;
+          sent_at: string | null;
+          subject: string;
+          to_email: string;
+          tracking_id: string;
+          user_id: string;
+        };
         Insert: {
-          body: string
-          clicked_at?: string | null
-          created_at?: string | null
-          id?: string
-          job_id: string
-          opened_at?: string | null
-          replied_at?: string | null
-          sent_at?: string | null
-          subject: string
-          to_email: string
-          tracking_id: string
-          user_id: string
-        }
+          body: string;
+          clicked_at?: string | null;
+          created_at?: string | null;
+          id?: string;
+          job_id: string;
+          opened_at?: string | null;
+          replied_at?: string | null;
+          sent_at?: string | null;
+          subject: string;
+          to_email: string;
+          tracking_id: string;
+          user_id: string;
+        };
         Update: {
-          body?: string
-          clicked_at?: string | null
-          created_at?: string | null
-          id?: string
-          job_id?: string
-          opened_at?: string | null
-          replied_at?: string | null
-          sent_at?: string | null
-          subject?: string
-          to_email?: string
-          tracking_id?: string
-          user_id?: string
-        }
+          body?: string;
+          clicked_at?: string | null;
+          created_at?: string | null;
+          id?: string;
+          job_id?: string;
+          opened_at?: string | null;
+          replied_at?: string | null;
+          sent_at?: string | null;
+          subject?: string;
+          to_email?: string;
+          tracking_id?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: 'emails_sent_job_id_fkey'
-            columns: ['job_id']
-            isOneToOne: false
-            referencedRelation: 'jobs'
-            referencedColumns: ['id']
+            foreignKeyName: "emails_sent_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       followup_reminders: {
         Row: {
-          created_at: string | null
-          email_sent_id: string | null
-          followup_number: number
-          id: string
-          job_id: string
-          scheduled_for: string
-          sent_at: string | null
-          user_id: string
-        }
+          created_at: string | null;
+          email_sent_id: string | null;
+          followup_number: number;
+          id: string;
+          job_id: string;
+          scheduled_for: string;
+          sent_at: string | null;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string | null
-          email_sent_id?: string | null
-          followup_number: number
-          id?: string
-          job_id: string
-          scheduled_for: string
-          sent_at?: string | null
-          user_id: string
-        }
+          created_at?: string | null;
+          email_sent_id?: string | null;
+          followup_number: number;
+          id?: string;
+          job_id: string;
+          scheduled_for: string;
+          sent_at?: string | null;
+          user_id: string;
+        };
         Update: {
-          created_at?: string | null
-          email_sent_id?: string | null
-          followup_number?: number
-          id?: string
-          job_id?: string
-          scheduled_for?: string
-          sent_at?: string | null
-          user_id?: string
-        }
+          created_at?: string | null;
+          email_sent_id?: string | null;
+          followup_number?: number;
+          id?: string;
+          job_id?: string;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: 'followup_reminders_email_sent_id_fkey'
-            columns: ['email_sent_id']
-            isOneToOne: false
-            referencedRelation: 'emails_sent'
-            referencedColumns: ['id']
+            foreignKeyName: "followup_reminders_email_sent_id_fkey";
+            columns: ["email_sent_id"];
+            isOneToOne: false;
+            referencedRelation: "emails_sent";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: 'followup_reminders_job_id_fkey'
-            columns: ['job_id']
-            isOneToOne: false
-            referencedRelation: 'jobs'
-            referencedColumns: ['id']
+            foreignKeyName: "followup_reminders_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       extension_tokens: {
         Row: {
-          id: string
-          user_id: string
-          token: string
-          device_name: string | null
-          last_used_at: string | null
-          created_at: string
-          expires_at: string
-          revoked: boolean
-        }
+          id: string;
+          user_id: string;
+          token: string;
+          device_name: string | null;
+          last_used_at: string | null;
+          created_at: string;
+          expires_at: string;
+          revoked: boolean;
+        };
         Insert: {
-          id?: string
-          user_id: string
-          token: string
-          device_name?: string | null
-          last_used_at?: string | null
-          created_at?: string
-          expires_at?: string
-          revoked?: boolean
-        }
+          id?: string;
+          user_id: string;
+          token: string;
+          device_name?: string | null;
+          last_used_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          revoked?: boolean;
+        };
         Update: {
-          id?: string
-          user_id?: string
-          token?: string
-          device_name?: string | null
-          last_used_at?: string | null
-          created_at?: string
-          expires_at?: string
-          revoked?: boolean
-        }
-        Relationships: []
-      }
+          id?: string;
+          user_id?: string;
+          token?: string;
+          device_name?: string | null;
+          last_used_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          revoked?: boolean;
+        };
+        Relationships: [];
+      };
       jobs: {
         Row: {
-          applied_at: string | null
-          company_domain: string | null
-          company_linkedin_url: string | null
-          company_name: string
-          created_at: string | null
-          email_source: Database['public']['Enums']['email_source'] | null
-          email_type: Database['public']['Enums']['email_type'] | null
-          hr_email: string | null
-          hr_name: string | null
-          id: string
-          job_description: string | null
-          job_title: string
-          job_url: string
-          location: string | null
-          poster_name: string | null
-          poster_title: string | null
-          poster_linkedin_url: string | null
-          salary: string | null
-          status: Database['public']['Enums']['job_status']
-          updated_at: string | null
-          user_id: string
-        }
+          applied_at: string | null;
+          company_domain: string | null;
+          company_linkedin_url: string | null;
+          company_name: string;
+          created_at: string | null;
+          email_source: Database["public"]["Enums"]["email_source"] | null;
+          email_type: Database["public"]["Enums"]["email_type"] | null;
+          extraction_confidence: Database["public"]["Enums"]["extraction_confidence"];
+          hr_email: string | null;
+          hr_name: string | null;
+          id: string;
+          job_description: string | null;
+          job_title: string;
+          job_url: string;
+          location: string | null;
+          poster_name: string | null;
+          poster_title: string | null;
+          poster_linkedin_url: string | null;
+          salary: string | null;
+          status: Database["public"]["Enums"]["job_status"];
+          updated_at: string | null;
+          user_id: string;
+        };
         Insert: {
-          applied_at?: string | null
-          company_domain?: string | null
-          company_linkedin_url?: string | null
-          company_name: string
-          created_at?: string | null
-          email_source?: Database['public']['Enums']['email_source'] | null
-          email_type?: Database['public']['Enums']['email_type'] | null
-          hr_email?: string | null
-          hr_name?: string | null
-          id?: string
-          job_description?: string | null
-          job_title: string
-          job_url: string
-          location?: string | null
-          poster_name?: string | null
-          poster_title?: string | null
-          poster_linkedin_url?: string | null
-          salary?: string | null
-          status?: Database['public']['Enums']['job_status']
-          updated_at?: string | null
-          user_id: string
-        }
+          applied_at?: string | null;
+          company_domain?: string | null;
+          company_linkedin_url?: string | null;
+          company_name: string;
+          created_at?: string | null;
+          email_source?: Database["public"]["Enums"]["email_source"] | null;
+          email_type?: Database["public"]["Enums"]["email_type"] | null;
+          extraction_confidence?: Database["public"]["Enums"]["extraction_confidence"];
+          hr_email?: string | null;
+          hr_name?: string | null;
+          id?: string;
+          job_description?: string | null;
+          job_title: string;
+          job_url: string;
+          location?: string | null;
+          poster_name?: string | null;
+          poster_title?: string | null;
+          poster_linkedin_url?: string | null;
+          salary?: string | null;
+          status?: Database["public"]["Enums"]["job_status"];
+          updated_at?: string | null;
+          user_id: string;
+        };
         Update: {
-          applied_at?: string | null
-          company_domain?: string | null
-          company_linkedin_url?: string | null
-          company_name?: string
-          created_at?: string | null
-          email_source?: Database['public']['Enums']['email_source'] | null
-          email_type?: Database['public']['Enums']['email_type'] | null
-          hr_email?: string | null
-          hr_name?: string | null
-          id?: string
-          job_description?: string | null
-          job_title?: string
-          job_url?: string
-          location?: string | null
-          poster_name?: string | null
-          poster_title?: string | null
-          poster_linkedin_url?: string | null
-          salary?: string | null
-          status?: Database['public']['Enums']['job_status']
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
+          applied_at?: string | null;
+          company_domain?: string | null;
+          company_linkedin_url?: string | null;
+          company_name?: string;
+          created_at?: string | null;
+          email_source?: Database["public"]["Enums"]["email_source"] | null;
+          email_type?: Database["public"]["Enums"]["email_type"] | null;
+          extraction_confidence?: Database["public"]["Enums"]["extraction_confidence"];
+          hr_email?: string | null;
+          hr_name?: string | null;
+          id?: string;
+          job_description?: string | null;
+          job_title?: string;
+          job_url?: string;
+          location?: string | null;
+          poster_name?: string | null;
+          poster_title?: string | null;
+          poster_linkedin_url?: string | null;
+          salary?: string | null;
+          status?: Database["public"]["Enums"]["job_status"];
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       link_clicks: {
         Row: {
-          click_count: number
-          clicked_at: string | null
-          created_at: string | null
-          email_sent_id: string | null
-          id: string
-          ip_address: string | null
-          job_id: string | null
-          link_type: string
-          original_url: string
-          tracking_id: string
-          user_agent: string | null
-          user_id: string | null
-        }
+          click_count: number;
+          clicked_at: string | null;
+          created_at: string | null;
+          email_sent_id: string | null;
+          id: string;
+          ip_address: string | null;
+          job_id: string | null;
+          link_type: string;
+          original_url: string;
+          tracking_id: string;
+          user_agent: string | null;
+          user_id: string | null;
+        };
         Insert: {
-          click_count?: number
-          clicked_at?: string | null
-          created_at?: string | null
-          email_sent_id?: string | null
-          id?: string
-          ip_address?: string | null
-          job_id?: string | null
-          link_type: string
-          original_url: string
-          tracking_id: string
-          user_agent?: string | null
-          user_id?: string | null
-        }
+          click_count?: number;
+          clicked_at?: string | null;
+          created_at?: string | null;
+          email_sent_id?: string | null;
+          id?: string;
+          ip_address?: string | null;
+          job_id?: string | null;
+          link_type: string;
+          original_url: string;
+          tracking_id: string;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
         Update: {
-          click_count?: number
-          clicked_at?: string | null
-          created_at?: string | null
-          email_sent_id?: string | null
-          id?: string
-          ip_address?: string | null
-          job_id?: string | null
-          link_type?: string
-          original_url?: string
-          tracking_id?: string
-          user_agent?: string | null
-          user_id?: string | null
-        }
+          click_count?: number;
+          clicked_at?: string | null;
+          created_at?: string | null;
+          email_sent_id?: string | null;
+          id?: string;
+          ip_address?: string | null;
+          job_id?: string | null;
+          link_type?: string;
+          original_url?: string;
+          tracking_id?: string;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: 'link_clicks_email_sent_id_fkey'
-            columns: ['email_sent_id']
-            isOneToOne: false
-            referencedRelation: 'emails_sent'
-            referencedColumns: ['id']
+            foreignKeyName: "link_clicks_email_sent_id_fkey";
+            columns: ["email_sent_id"];
+            isOneToOne: false;
+            referencedRelation: "emails_sent";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: 'link_clicks_job_id_fkey'
-            columns: ['job_id']
-            isOneToOne: false
-            referencedRelation: 'jobs'
-            referencedColumns: ['id']
+            foreignKeyName: "link_clicks_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       user_documents: {
         Row: {
-          id: string
-          user_id: string
-          document_type: 'cv' | 'cover_letter'
-          file_name: string
-          file_path: string
-          file_size: number
-          is_master: boolean
-          display_name: string | null
-          created_at: string
-          updated_at: string
-        }
+          id: string;
+          user_id: string;
+          document_type: "cv" | "cover_letter";
+          file_name: string;
+          file_path: string;
+          file_size: number;
+          is_master: boolean;
+          display_name: string | null;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?: string
-          user_id: string
-          document_type: 'cv' | 'cover_letter'
-          file_name: string
-          file_path: string
-          file_size: number
-          is_master?: boolean
-          display_name?: string | null
-          created_at?: string
-          updated_at?: string
-        }
+          id?: string;
+          user_id: string;
+          document_type: "cv" | "cover_letter";
+          file_name: string;
+          file_path: string;
+          file_size: number;
+          is_master?: boolean;
+          display_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          id?: string
-          user_id?: string
-          document_type?: 'cv' | 'cover_letter'
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          is_master?: boolean
-          display_name?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          user_id?: string;
+          document_type?: "cv" | "cover_letter";
+          file_name?: string;
+          file_path?: string;
+          file_size?: number;
+          is_master?: boolean;
+          display_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_settings: {
         Row: {
-          apollo_api_key: string | null
-          auto_followup_enabled: boolean | null
-          contact_line: string | null
-          created_at: string | null
-          email_provider: string | null
-          followup_delay_days: number | null
-          full_name: string | null
-          gmail_access_token: string | null
-          gmail_refresh_token: string | null
-          hunter_api_key: string | null
-          id: string
-          linkedin_url: string | null
-          professional_summary: string | null
-          updated_at: string | null
-          user_id: string
-          yahoo_email: string | null
-          yahoo_password_encrypted: string | null
-        }
+          apollo_api_key: string | null;
+          auto_followup_enabled: boolean | null;
+          contact_line: string | null;
+          created_at: string | null;
+          email_provider: string | null;
+          followup_delay_days: number | null;
+          full_name: string | null;
+          gmail_access_token: string | null;
+          gmail_refresh_token: string | null;
+          hunter_api_key: string | null;
+          id: string;
+          linkedin_url: string | null;
+          professional_summary: string | null;
+          updated_at: string | null;
+          user_id: string;
+          yahoo_email: string | null;
+          yahoo_password_encrypted: string | null;
+        };
         Insert: {
-          apollo_api_key?: string | null
-          auto_followup_enabled?: boolean | null
-          contact_line?: string | null
-          created_at?: string | null
-          email_provider?: string | null
-          followup_delay_days?: number | null
-          full_name?: string | null
-          gmail_access_token?: string | null
-          gmail_refresh_token?: string | null
-          hunter_api_key?: string | null
-          id?: string
-          linkedin_url?: string | null
-          professional_summary?: string | null
-          updated_at?: string | null
-          user_id: string
-          yahoo_email?: string | null
-          yahoo_password_encrypted?: string | null
-        }
+          apollo_api_key?: string | null;
+          auto_followup_enabled?: boolean | null;
+          contact_line?: string | null;
+          created_at?: string | null;
+          email_provider?: string | null;
+          followup_delay_days?: number | null;
+          full_name?: string | null;
+          gmail_access_token?: string | null;
+          gmail_refresh_token?: string | null;
+          hunter_api_key?: string | null;
+          id?: string;
+          linkedin_url?: string | null;
+          professional_summary?: string | null;
+          updated_at?: string | null;
+          user_id: string;
+          yahoo_email?: string | null;
+          yahoo_password_encrypted?: string | null;
+        };
         Update: {
-          apollo_api_key?: string | null
-          auto_followup_enabled?: boolean | null
-          contact_line?: string | null
-          created_at?: string | null
-          email_provider?: string | null
-          followup_delay_days?: number | null
-          full_name?: string | null
-          gmail_access_token?: string | null
-          gmail_refresh_token?: string | null
-          hunter_api_key?: string | null
-          id?: string
-          linkedin_url?: string | null
-          professional_summary?: string | null
-          updated_at?: string | null
-          user_id?: string
-          yahoo_email?: string | null
-          yahoo_password_encrypted?: string | null
-        }
-        Relationships: []
-      }
+          apollo_api_key?: string | null;
+          auto_followup_enabled?: boolean | null;
+          contact_line?: string | null;
+          created_at?: string | null;
+          email_provider?: string | null;
+          followup_delay_days?: number | null;
+          full_name?: string | null;
+          gmail_access_token?: string | null;
+          gmail_refresh_token?: string | null;
+          hunter_api_key?: string | null;
+          id?: string;
+          linkedin_url?: string | null;
+          professional_summary?: string | null;
+          updated_at?: string | null;
+          user_id?: string;
+          yahoo_email?: string | null;
+          yahoo_password_encrypted?: string | null;
+        };
+        Relationships: [];
+      };
       user_stats: {
         Row: {
-          created_at: string | null
-          emails_contributed: number | null
-          emails_verified: number | null
-          helped_users_count: number | null
-          id: string
-          reputation_score: number | null
-          updated_at: string | null
-          user_id: string
-        }
+          created_at: string | null;
+          emails_contributed: number | null;
+          emails_verified: number | null;
+          helped_users_count: number | null;
+          id: string;
+          reputation_score: number | null;
+          updated_at: string | null;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string | null
-          emails_contributed?: number | null
-          emails_verified?: number | null
-          helped_users_count?: number | null
-          id?: string
-          reputation_score?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
+          created_at?: string | null;
+          emails_contributed?: number | null;
+          emails_verified?: number | null;
+          helped_users_count?: number | null;
+          id?: string;
+          reputation_score?: number | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
         Update: {
-          created_at?: string | null
-          emails_contributed?: number | null
-          emails_verified?: number | null
-          helped_users_count?: number | null
-          id?: string
-          reputation_score?: number | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-    }
+          created_at?: string | null;
+          emails_contributed?: number | null;
+          emails_verified?: number | null;
+          helped_users_count?: number | null;
+          id?: string;
+          reputation_score?: number | null;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Enums: {
-      email_source: 'community' | 'pattern' | 'hunter' | 'apollo' | 'manual'
-      email_type: 'generic' | 'personal'
+      email_source: "community" | "pattern" | "hunter" | "apollo" | "manual";
+      email_type: "generic" | "personal";
+      extraction_confidence: "ok" | "degraded" | "failed";
       job_status:
-        | 'captured'
-        | 'email_found'
-        | 'email_sent'
-        | 'interview'
-        | 'offer'
-        | 'rejected'
-    }
+        | "captured"
+        | "email_found"
+        | "email_sent"
+        | "interview"
+        | "offer"
+        | "rejected";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  "public"
+>];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
@@ -756,101 +763,102 @@ export type Tables<
         DefaultSchema["Views"])
     ? (DefaultSchema["Tables"] &
         DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
     Enums: {
       email_source: ["community", "pattern", "hunter", "apollo", "manual"],
       email_type: ["generic", "personal"],
+      extraction_confidence: ["ok", "degraded", "failed"],
       job_status: [
         "captured",
         "email_found",
@@ -861,4 +869,4 @@ export const Constants = {
       ],
     },
   },
-} as const
+} as const;

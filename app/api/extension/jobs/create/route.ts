@@ -5,6 +5,9 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { AuthService } from '@/lib/auth/auth-service'
 import { AuthError } from '@/lib/errors/app-error'
+import type { ExtractionConfidence } from '@/types'
+
+const VALID_EXTRACTION_CONFIDENCE: ExtractionConfidence[] = ['ok', 'degraded', 'failed']
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +29,7 @@ export async function POST(request: Request) {
       poster_name,
       poster_title,
       poster_linkedin_url,
+      extraction_confidence,
     } = body
 
     if (!company_name || !job_title || !job_url) {
@@ -34,6 +38,12 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Defaults to 'ok' when absent or unrecognized — covers a stale/pre-update extension build
+    // that doesn't send this field at all, without rejecting the capture.
+    const confidence: ExtractionConfidence = VALID_EXTRACTION_CONFIDENCE.includes(extraction_confidence)
+      ? extraction_confidence
+      : 'ok'
 
     const supabase = createServiceClient()
 
@@ -53,6 +63,7 @@ export async function POST(request: Request) {
         poster_name: poster_name || null,
         poster_title: poster_title || null,
         poster_linkedin_url: poster_linkedin_url || null,
+        extraction_confidence: confidence,
       })
       .select()
       .single()
