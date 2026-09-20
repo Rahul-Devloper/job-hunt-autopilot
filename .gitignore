@@ -37,3 +37,8 @@ next-env.d.ts
 
 # Claude Code
 .claude/
+
+# Golden Rules working docs — local planning/tracking only, not repo content
+GOLDEN-RULES.md
+/private_docs/
+/trackers/
