@@ -6,6 +6,30 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Overlay-style scrollbar: invisible at rest, thin translucent thumb on hover — a mouse/
+     trackpad scroll gesture requires the cursor over the element anyway, so this reads as
+     "the scrollbar shows up when you scroll" without any JS. */
+  .jha-scroll-fade {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .jha-scroll-fade:hover {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+  .jha-scroll-fade::-webkit-scrollbar {
+    width: 8px;
+  }
+  .jha-scroll-fade::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .jha-scroll-fade::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+  }
+  .jha-scroll-fade:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+  }
 }
 
 @layer base {

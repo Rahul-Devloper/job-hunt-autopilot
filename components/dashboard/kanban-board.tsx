@@ -76,7 +76,7 @@ function DroppableColumn({
         // flex-1 + min-h-0 lets the column body take the remaining height
         // under its (fixed) header and scroll on its own; overflow-x-hidden
         // stops overflow-y from also turning on a horizontal scrollbar.
-        'flex flex-1 min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-lg px-1 pt-1 pb-4 -mx-1 transition-colors',
+        'jha-scroll-fade flex flex-1 min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-lg px-1 pt-1 pb-4 -mx-1 transition-colors',
         isOver && 'bg-blue-50 ring-2 ring-blue-300 dark:bg-blue-500/10 dark:ring-blue-500/40'
       )}
     >
