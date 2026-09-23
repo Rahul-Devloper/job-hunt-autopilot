@@ -455,6 +455,7 @@ export type Database = {
           hr_name: string | null;
           id: string;
           job_description: string | null;
+          job_embedding: string | null;
           job_title: string;
           job_url: string;
           location: string | null;
@@ -479,6 +480,7 @@ export type Database = {
           hr_name?: string | null;
           id?: string;
           job_description?: string | null;
+          job_embedding?: string | null;
           job_title: string;
           job_url: string;
           location?: string | null;
@@ -503,6 +505,7 @@ export type Database = {
           hr_name?: string | null;
           id?: string;
           job_description?: string | null;
+          job_embedding?: string | null;
           job_title?: string;
           job_url?: string;
           location?: string | null;
