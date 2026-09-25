@@ -12,11 +12,20 @@ const EMBEDDING_MODEL = 'gemini-embedding-001'
 const EMBEDDING_DIMENSIONS = 768
 const EMBEDDING_TIMEOUT_MS = 10000
 
+export type EmbeddingTaskType = 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY'
+
 /**
  * Generates a 768-dim embedding for `text` via Gemini. Never throws — a failed or skipped
  * embed returns null so callers (e.g. a job save) can proceed without one.
+ *
+ * `taskType` defaults to RETRIEVAL_DOCUMENT (the side being stored/searched, e.g. a job
+ * description). Pass RETRIEVAL_QUERY when embedding a search question — Gemini's retrieval
+ * models are asymmetric, and embedding both sides the same way degrades match quality.
  */
-export async function generateEmbedding(text: string): Promise<number[] | null> {
+export async function generateEmbedding(
+  text: string,
+  taskType: EmbeddingTaskType = 'RETRIEVAL_DOCUMENT',
+): Promise<number[] | null> {
   let trimmed = (text || '').trim()
 
   if (trimmed.length < MIN_EMBEDDABLE_TEXT_LENGTH) {
@@ -48,7 +57,7 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
       contents: [trimmed],
       config: {
         outputDimensionality: EMBEDDING_DIMENSIONS,
-        taskType: 'RETRIEVAL_DOCUMENT',
+        taskType,
       },
     })
 

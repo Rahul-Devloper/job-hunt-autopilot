@@ -716,7 +716,21 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      match_jobs: {
+        Args: {
+          query_embedding: string;
+          match_count?: number;
+          max_distance?: number;
+        };
+        Returns: {
+          id: string;
+          job_title: string;
+          company_name: string;
+          job_description: string | null;
+          job_url: string;
+          distance: number;
+        }[];
+      };
     };
     Enums: {
       email_source: "community" | "pattern" | "hunter" | "apollo" | "manual";
