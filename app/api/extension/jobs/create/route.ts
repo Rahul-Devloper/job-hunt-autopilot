@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { AuthService } from '@/lib/auth/auth-service'
 import { AuthError } from '@/lib/errors/app-error'
+import { generateEmbedding } from '@/lib/embeddings'
 import type { ExtractionConfidence } from '@/types'
 
 const VALID_EXTRACTION_CONFIDENCE: ExtractionConfidence[] = ['ok', 'degraded', 'failed']
@@ -47,6 +48,17 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient()
 
+    let jobEmbedding: string | null = null
+    try {
+      const vector = await generateEmbedding(job_description || '')
+      jobEmbedding = vector ? JSON.stringify(vector) : null
+    } catch (embeddingError) {
+      console.error(
+        '[ExtensionCreate] Embedding generation threw unexpectedly:',
+        embeddingError instanceof Error ? embeddingError.message : embeddingError,
+      )
+    }
+
     const { data: job, error: jobError } = await supabase
       .from('jobs')
       .insert({
@@ -64,6 +76,7 @@ export async function POST(request: Request) {
         poster_title: poster_title || null,
         poster_linkedin_url: poster_linkedin_url || null,
         extraction_confidence: confidence,
+        job_embedding: jobEmbedding,
       })
       .select()
       .single()

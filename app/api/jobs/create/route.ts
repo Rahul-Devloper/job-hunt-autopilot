@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { generateEmbedding } from '@/lib/embeddings'
 import { z } from 'zod'
 
 const JobSchema = z.object({
@@ -52,9 +53,20 @@ export async function POST(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user_id: _uid, ...jobData } = validatedData
 
+    let jobEmbedding: string | null = null
+    try {
+      const vector = await generateEmbedding(jobData.job_description || '')
+      jobEmbedding = vector ? JSON.stringify(vector) : null
+    } catch (embeddingError) {
+      console.error(
+        '[JobCreate] Embedding generation threw unexpectedly:',
+        embeddingError instanceof Error ? embeddingError.message : embeddingError,
+      )
+    }
+
     const { data, error } = await supabase
       .from('jobs')
-      .insert({ ...jobData, user_id: userId })
+      .insert({ ...jobData, user_id: userId, job_embedding: jobEmbedding })
       .select()
       .single()
 
