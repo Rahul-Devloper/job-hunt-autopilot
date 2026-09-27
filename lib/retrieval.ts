@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateEmbedding } from '@/lib/embeddings'
+import type { Database } from '@/types/database'
 
 export interface MatchedJob {
   id: string
@@ -7,6 +8,7 @@ export interface MatchedJob {
   company_name: string
   job_description: string | null
   job_url: string
+  status: Database['public']['Enums']['job_status']
   distance: number
 }
 
@@ -14,10 +16,15 @@ export interface MatchedJob {
  * Embeds `question` and runs a pgvector similarity search (match_jobs RPC) against
  * jobs.job_embedding. Never throws — returns [] and logs on any failure (embedding failed,
  * RPC error), matching this project's soft-fail convention for optional/best-effort features.
+ *
+ * Excludes rejected jobs by default — a rejected job shouldn't be recommended as if it's a live
+ * opportunity. This filters before ranking, so an excluded rejected job never displaces a
+ * genuinely relevant active one. Pass excludeRejected: false for a future mode that deliberately
+ * wants to search rejected applications.
  */
 export async function findRelevantJobs(
   question: string,
-  options: { matchCount?: number; maxDistance?: number } = {},
+  options: { matchCount?: number; maxDistance?: number; excludeRejected?: boolean } = {},
 ): Promise<MatchedJob[]> {
   const embedding = await generateEmbedding(question, 'RETRIEVAL_QUERY')
 
@@ -34,6 +41,7 @@ export async function findRelevantJobs(
     query_embedding: JSON.stringify(embedding),
     ...(options.matchCount !== undefined && { match_count: options.matchCount }),
     ...(options.maxDistance !== undefined && { max_distance: options.maxDistance }),
+    ...(options.excludeRejected !== undefined && { exclude_rejected: options.excludeRejected }),
   })
 
   if (error) {

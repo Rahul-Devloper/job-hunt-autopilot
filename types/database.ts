@@ -721,6 +721,7 @@ export type Database = {
           query_embedding: string;
           match_count?: number;
           max_distance?: number;
+          exclude_rejected?: boolean;
         };
         Returns: {
           id: string;
@@ -728,6 +729,7 @@ export type Database = {
           company_name: string;
           job_description: string | null;
           job_url: string;
+          status: Database["public"]["Enums"]["job_status"];
           distance: number;
         }[];
       };
