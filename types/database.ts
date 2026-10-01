@@ -719,6 +719,7 @@ export type Database = {
       match_jobs: {
         Args: {
           query_embedding: string;
+          p_user_id: string;
           match_count?: number;
           max_distance?: number;
           exclude_rejected?: boolean;
