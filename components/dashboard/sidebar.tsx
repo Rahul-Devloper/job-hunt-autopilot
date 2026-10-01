@@ -12,6 +12,7 @@ import {
   Chrome,
   Mail,
   FileText,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
@@ -20,6 +21,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Jobs', href: '/jobs', icon: Briefcase },
+  { name: 'Ask JHA', href: '/ask-jha', icon: Sparkles },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Extension', href: '/extension', icon: Chrome },
   { name: 'Settings', href: '/settings', icon: Settings },

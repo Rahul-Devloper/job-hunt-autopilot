@@ -31,7 +31,7 @@ function buildPrompt(question: string, jobs: MatchedJob[]): string {
   return `You are Ask JHA, a job search assistant. Answer the question below using ONLY the job postings provided as context. Never use outside knowledge about companies, technologies, or the job market — everything you say must be traceable to the text below.
 
 ⚠️ CRITICAL — RETRIEVAL IS NOT CONFIRMATION
-These jobs were found by semantic similarity search, which means they are topically related to the question — it does NOT mean their text actually confirms what's being asked. A job about full-stack engineering can be topically close to a question about a specific technology (e.g. Kafka, Terraform, a specific framework) WITHOUT that technology ever being mentioned in the job's actual text.
+These jobs were found by semantic similarity search, which means they are topically related to the question — it does NOT mean their text actually confirms what's being asked. A job about full-stack engineering can be topically close to a question about a specific technology (e.g. Kafka, Terraform, a specific framework) WITHOUT that technology ever being mentioned in the job's actual text. Semantic search is also imperfect — occasionally a job with NO real connection to the question gets included in the list below at all.
 
 For EACH job below, before using it to answer:
 1. Actually check whether the job's text contains the specific thing the question asks about (a skill, technology, requirement, location, salary detail, etc.) — read it, don't assume.
@@ -43,17 +43,25 @@ ${context}
 
 QUESTION: ${question}
 
-Write a direct, honest answer (2-5 sentences). Return JSON with a single "answer" field.`
+Write a direct, honest answer (2-5 sentences).
+
+Then list which job numbers (from [Job N] above) your answer actually relies on as genuine, confirmed evidence — not just jobs that happened to be in the list. A job you only mentioned to say "this one does NOT confirm it" is NOT relevant evidence and must be excluded from this list. If NONE of the jobs genuinely support your answer, return an empty array — do not include a job just because it was provided to you.
+
+Return JSON with "answer" (string) and "relevant_job_numbers" (array of integers, referencing the [Job N] labels, e.g. [1, 3]; empty array if none).`
 }
 
 /**
- * Answers `question` grounded only in the user's own saved jobs. If findRelevantJobs() returns
+ * Answers `question` grounded only in `userId`'s own saved jobs. If findRelevantJobs() returns
  * nothing, this returns a direct "no match" answer WITHOUT calling Gemini at all — letting the
  * model answer from its own general knowledge when nothing relevant was retrieved is exactly the
  * hallucination risk this function exists to prevent. Never throws.
  */
-export async function askJHA(question: string): Promise<AskJHAResult> {
-  const jobs = await findRelevantJobs(question)
+export async function askJHA(
+  question: string,
+  userId: string,
+  retrievalOptions?: Parameters<typeof findRelevantJobs>[2],
+): Promise<AskJHAResult> {
+  const jobs = await findRelevantJobs(question, userId, retrievalOptions)
 
   if (jobs.length === 0) {
     console.log('[AskJHA] No relevant jobs retrieved — skipping Gemini call')
@@ -85,8 +93,12 @@ export async function askJHA(question: string): Promise<AskJHAResult> {
           type: Type.OBJECT,
           properties: {
             answer: { type: Type.STRING },
+            relevant_job_numbers: {
+              type: Type.ARRAY,
+              items: { type: Type.INTEGER },
+            },
           },
-          required: ['answer'],
+          required: ['answer', 'relevant_job_numbers'],
         },
       },
     })
@@ -112,7 +124,7 @@ export async function askJHA(question: string): Promise<AskJHAResult> {
       return { answer: "I couldn't generate an answer for that question.", sources: [] }
     }
 
-    let parsed: { answer?: string }
+    let parsed: { answer?: string; relevant_job_numbers?: number[] }
     try {
       parsed = JSON.parse(text)
     } catch {
@@ -125,7 +137,22 @@ export async function askJHA(question: string): Promise<AskJHAResult> {
       return { answer: "I couldn't generate an answer for that question.", sources: [] }
     }
 
-    return { answer: parsed.answer.trim(), sources: jobs.map(toSource) }
+    // Sources are the jobs the model itself confirmed as genuine evidence — NOT everything
+    // findRelevantJobs() retrieved. Retrieval (semantic distance) can occasionally include a job
+    // with no real connection to the question; only the model, having actually read each job's
+    // text, can say which ones truly support the answer. A job mentioned only to say "this one
+    // doesn't confirm it" must not appear as a source.
+    const relevantNumbers = Array.isArray(parsed.relevant_job_numbers) ? parsed.relevant_job_numbers : []
+    const sources = relevantNumbers
+      .map((n) => jobs[n - 1])
+      .filter((job): job is MatchedJob => job !== undefined)
+      .map(toSource)
+
+    if (relevantNumbers.length === 0) {
+      console.log('[AskJHA] Model confirmed no retrieved jobs as genuine evidence')
+    }
+
+    return { answer: parsed.answer.trim(), sources }
   } catch (error) {
     console.error('[AskJHA] Gemini error:', error instanceof Error ? error.message : error)
     return { answer: "I couldn't generate an answer right now — please try again.", sources: [] }
