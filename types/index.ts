@@ -8,6 +8,10 @@ export type Job = Database['public']['Tables']['jobs']['Row']
 export type JobInsert = Database['public']['Tables']['jobs']['Insert']
 export type JobUpdate = Database['public']['Tables']['jobs']['Update']
 
+// A job as the jobs board loads it: the row plus how many job_contacts it has
+// (the rows the Contacts popup shows). Send Email is gated on this count.
+export type BoardJob = Job & { contact_count: number }
+
 export type CommunityEmail = Database['public']['Tables']['community_emails']['Row']
 export type CommunityEmailInsert = Database['public']['Tables']['community_emails']['Insert']
 export type CommunityEmailUpdate = Database['public']['Tables']['community_emails']['Update']

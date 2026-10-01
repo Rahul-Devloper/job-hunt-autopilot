@@ -3,6 +3,8 @@ import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ValidationService } from '@/lib/validation/validation-service'
 import { jobContactRepository } from '@/lib/repositories'
 import { jobContactSchemas } from '@/lib/validation/schemas'
+import { createClient } from '@/lib/supabase/server'
+import { syncJobStatusWithContacts } from '@/lib/utils/update-job-status'
 
 export async function PUT(
   request: Request,
@@ -33,9 +35,10 @@ export async function DELETE(
 ) {
   try {
     const auth = await AuthService.authenticateCookie()
-    const { contactId } = await params
+    const { id, contactId } = await params
 
     await jobContactRepository.delete(contactId, auth.userId)
+    await syncJobStatusWithContacts(await createClient(), id, auth.userId)
 
     return ApiResponseBuilder.success({ deleted: true }, 'Contact deleted')
   } catch (error) {

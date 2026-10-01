@@ -4,23 +4,15 @@ import { useState, useEffect } from 'react'
 import { Header } from '@/components/dashboard/header'
 import { KanbanBoard } from '@/components/dashboard/kanban-board'
 import { ListView } from '@/components/dashboard/list-view'
-import { ManualEmailDialog } from '@/components/dashboard/manual-email-dialog'
 import { EmailComposer } from '@/components/dashboard/email-composer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createClient } from '@/lib/supabase/client'
-import type { Job, JobStatus } from '@/types'
+import type { BoardJob, Job, JobStatus } from '@/types'
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([])
+  const [jobs, setJobs] = useState<BoardJob[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [findingEmail, setFindingEmail] = useState<string | null>(null)
-  const [manualEmailDialog, setManualEmailDialog] = useState<{
-    open: boolean
-    jobId: string
-    companyName: string
-    existingEmail?: string
-  } | null>(null)
   const [emailComposer, setEmailComposer] = useState<Job | null>(null)
 
   useEffect(() => {
@@ -32,11 +24,19 @@ export default function JobsPage() {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('jobs') as any)
-        .select('*')
-        .order('created_at', { ascending: false }) as { data: Job[] | null; error: unknown }
+        .select('*, job_contacts(count)')
+        .order('created_at', { ascending: false }) as {
+          data: (Job & { job_contacts?: { count: number }[] })[] | null
+          error: unknown
+        }
 
       if (error) throw error
-      setJobs(data || [])
+      setJobs(
+        (data || []).map(({ job_contacts, ...job }) => ({
+          ...job,
+          contact_count: job_contacts?.[0]?.count ?? 0,
+        }))
+      )
     } catch (error) {
       console.error('Error fetching jobs:', error)
     } finally {
@@ -65,82 +65,6 @@ export default function JobsPage() {
     } catch (error) {
       console.error('Error deleting job:', error)
       alert('Failed to delete job')
-    }
-  }
-
-  async function handleFindEmail(id: string) {
-    const job = jobs.find((j) => j.id === id)
-    if (!job) return
-
-    setFindingEmail(id)
-
-    try {
-      // Step 1: Poster lookup via API keys (real person, highest value)
-      if (job.poster_name || job.poster_linkedin_url) {
-        const posterRes = await fetch(`/api/jobs/${id}/find-contacts`, { method: 'POST' })
-        const posterData = await posterRes.json()
-
-        if (posterData.success) {
-          alert(`Found poster email!\n\nEmail: ${posterData.data.email}`)
-          await fetchJobs()
-          return
-        }
-        // Poster lookup failed — fall through to pattern guessing
-      }
-
-      // Step 2: DNS pattern guessing fallback (no API keys needed)
-      if (!job.company_domain) {
-        alert('No poster data or company domain found. Please add the email manually.')
-        setManualEmailDialog({ open: true, jobId: id, companyName: job.company_name })
-        return
-      }
-
-      const response = await fetch('/api/emails/find', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: id, company_domain: job.company_domain }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        alert(`Email found via ${data.source}!\n\nEmail: ${data.email}`)
-        await fetchJobs()
-      } else {
-        const addManually = confirm(
-          `${data.message}\n\nWould you like to add the email manually?`
-        )
-        if (addManually) {
-          setManualEmailDialog({ open: true, jobId: id, companyName: job.company_name })
-        }
-      }
-    } catch (error) {
-      console.error('Error finding email:', error)
-      alert('Failed to find email. Please try again.')
-    } finally {
-      setFindingEmail(null)
-    }
-  }
-
-  function handleManualEmail(jobId: string, existingEmail?: string) {
-    const job = jobs.find((j) => j.id === jobId)
-    if (!job) return
-    setManualEmailDialog({
-      open: true,
-      jobId,
-      companyName: job.company_name,
-      existingEmail,
-    })
-  }
-
-  async function handleRemoveEmail(jobId: string) {
-    if (!confirm('Remove this email address from the job?')) return
-    try {
-      const response = await fetch(`/api/jobs/${jobId}/email`, { method: 'DELETE' })
-      const data = await response.json()
-      if (data.success) await fetchJobs()
-    } catch (error) {
-      console.error('Failed to remove email:', error)
     }
   }
 
@@ -224,12 +148,8 @@ export default function JobsPage() {
               <KanbanBoard
                 jobs={filteredJobs}
                 onDelete={handleDelete}
-                onFindEmail={handleFindEmail}
                 onSendEmail={handleSendEmail}
-                onManualEmail={handleManualEmail}
-                onRemoveEmail={handleRemoveEmail}
                 onStatusChange={handleStatusChange}
-                findingEmail={findingEmail}
                 onRefresh={fetchJobs}
               />
             )}
@@ -239,26 +159,11 @@ export default function JobsPage() {
             <ListView
               jobs={filteredJobs}
               onDelete={handleDelete}
-              onFindEmail={handleFindEmail}
               onSendEmail={handleSendEmail}
-              onManualEmail={handleManualEmail}
-              onRemoveEmail={handleRemoveEmail}
-              findingEmail={findingEmail}
             />
           </TabsContent>
         </Tabs>
       </div>
-
-      {manualEmailDialog && (
-        <ManualEmailDialog
-          open={manualEmailDialog.open}
-          onClose={() => setManualEmailDialog(null)}
-          jobId={manualEmailDialog.jobId}
-          companyName={manualEmailDialog.companyName}
-          existingEmail={manualEmailDialog.existingEmail}
-          onSuccess={fetchJobs}
-        />
-      )}
 
       {emailComposer && (
         <EmailComposer

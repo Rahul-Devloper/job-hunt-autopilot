@@ -90,7 +90,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
 
   // Recipients
   const [contacts, setContacts] = useState<JobContact[]>([])
-  const [recipientInput, setRecipientInput] = useState(job.hr_email || '')
+  const [recipientInput, setRecipientInput] = useState('')
   const [emailError, setEmailError] = useState('')
 
   // Attachments
@@ -157,8 +157,8 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
       if (data.success) {
         const list: JobContact[] = data.data || []
         setContacts(list)
-        // Pre-fill To with primary contact (or hr_email fallback)
-        const primary = list.find((c) => c.is_primary)
+        // Pre-fill To with the primary contact (first contact if the primary was deleted)
+        const primary = list.find((c) => c.is_primary) ?? list[0]
         if (primary) {
           setRecipientInput(primary.email)
         }
@@ -306,7 +306,7 @@ export function EmailComposer({ open, onClose, job, onSuccess }: EmailComposerPr
     .replace(/{role}/g, job.job_title)
     .replace(
       /{hr_name}/g,
-      primaryContact?.contact_name || job.hr_name || `${job.company_name} hiring team`
+      primaryContact?.contact_name || `${job.company_name} hiring team`
     )
   // Render the preview through the same formatter the send route uses, so
   // linkified URLs, bold, and spacing match what the recipient will get.

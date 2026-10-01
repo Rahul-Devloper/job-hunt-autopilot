@@ -5,7 +5,7 @@ import { AuthService } from '@/lib/auth/auth-service'
 import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ContactDiscoveryService } from '@/lib/services/contact-discovery-service'
 import { createServiceClient } from '@/lib/supabase/server'
-import { markJobEmailFound } from '@/lib/utils/update-job-status'
+import { syncJobStatusWithContacts } from '@/lib/utils/update-job-status'
 
 interface LinkedInProfile {
   name: string
@@ -88,19 +88,9 @@ export async function POST(
       }
     }
 
-    if (savedContacts.length > 0) {
-      // Set hr_email from the primary contact so the email badge + Send Email button appear
-      const primaryContact = savedContacts[0]
-      await markJobEmailFound(
-        supabase,
-        job.id,
-        auth.userId,
-        job.status,
-        primaryContact.email as string,
-        'hunter',
-        'personal',
-      )
-    }
+    // Always sync, even when nothing was saved: the re-run above may have
+    // deleted this job's only contacts.
+    await syncJobStatusWithContacts(supabase, job.id, auth.userId)
 
     // Cache verified_domain (from /about/ page scrape) back to job if new
     if (verified_domain && verified_domain !== job.company_domain) {

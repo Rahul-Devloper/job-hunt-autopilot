@@ -15,17 +15,13 @@ import {
 } from '@dnd-kit/core'
 import { JobCard, statusColors, statusLabels } from './job-card'
 import { cn } from '@/lib/utils'
-import type { Job, JobStatus } from '@/types'
+import type { BoardJob, Job, JobStatus } from '@/types'
 
 interface KanbanBoardProps {
-  jobs: Job[]
+  jobs: BoardJob[]
   onDelete?: (id: string) => void
-  onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
-  onManualEmail?: (id: string, existingEmail?: string) => void
-  onRemoveEmail?: (id: string) => void
   onStatusChange?: (id: string, status: JobStatus) => void
-  findingEmail?: string | null
   onRefresh?: () => void
 }
 
@@ -109,7 +105,7 @@ function DragPreviewCard({ job }: { job: Job }) {
   )
 }
 
-export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, onManualEmail, onRemoveEmail, onStatusChange, findingEmail, onRefresh }: KanbanBoardProps) {
+export function KanbanBoard({ jobs, onDelete, onSendEmail, onStatusChange, onRefresh }: KanbanBoardProps) {
   const [activeJob, setActiveJob] = useState<Job | null>(null)
 
   const sensors = useSensors(
@@ -166,12 +162,8 @@ export function KanbanBoard({ jobs, onDelete, onFindEmail, onSendEmail, onManual
                       key={job.id}
                       job={job}
                       onDelete={onDelete}
-                      onFindEmail={onFindEmail}
                       onSendEmail={onSendEmail}
-                      onManualEmail={onManualEmail}
-                      onRemoveEmail={onRemoveEmail}
                       onStatusChange={onStatusChange}
-                      findingEmail={findingEmail}
                       onRefresh={onRefresh}
                     />
                   ))

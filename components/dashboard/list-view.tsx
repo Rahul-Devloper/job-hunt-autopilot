@@ -2,25 +2,21 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Mail, Trash2, Loader2, Edit2, X } from 'lucide-react'
+import { ExternalLink, Mail, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { statusColors, statusLabels } from './job-card'
 import { ExtractionConfidenceBadge } from '@/components/dashboard/extraction-confidence-badge'
-import type { Job } from '@/types'
+import type { BoardJob } from '@/types'
 
 interface ListViewProps {
-  jobs: Job[]
+  jobs: BoardJob[]
   onDelete?: (id: string) => void
-  onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
-  onManualEmail?: (id: string, existingEmail?: string) => void
-  onRemoveEmail?: (id: string) => void
-  findingEmail?: string | null
 }
 
-export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, onManualEmail, onRemoveEmail, findingEmail }: ListViewProps) {
+export function ListView({ jobs, onDelete, onSendEmail }: ListViewProps) {
   return (
     <div className="h-full p-8">
       <div className="h-full overflow-auto rounded-lg border bg-card">
@@ -38,9 +34,6 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, onManualEma
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                HR Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Captured
@@ -73,80 +66,12 @@ export function ListView({ jobs, onDelete, onFindEmail, onSendEmail, onManualEma
                     {statusLabels[job.status]}
                   </Badge>
                 </td>
-                <td className="px-6 py-4">
-                  {job.hr_email ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-foreground">{job.hr_email}</span>
-                      {job.email_source === 'manual' && (
-                        <Badge variant="outline" className="gap-1 text-blue-600 border-blue-300 text-xs dark:text-blue-400 dark:border-blue-500/40">
-                          Manual
-                        </Badge>
-                      )}
-                      {job.email_type === 'personal' && (
-                        <Badge className="gap-1 bg-green-100 text-green-800 border-green-200 hover:bg-green-100 text-xs dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30 dark:hover:bg-green-500/20">
-                          ★ Personal
-                        </Badge>
-                      )}
-                      {job.email_type === 'generic' && job.email_source !== 'manual' && (
-                        <Badge variant="outline" className="gap-1 text-muted-foreground text-xs">
-                          Generic
-                        </Badge>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        title="Edit email"
-                        onClick={() => onManualEmail?.(job.id, job.hr_email ?? undefined)}
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        title="Remove email"
-                        onClick={() => onRemoveEmail?.(job.id)}
-                      >
-                        <X className="h-3 w-3 text-red-500" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7"
-                      onClick={() => onManualEmail?.(job.id)}
-                    >
-                      <Mail className="mr-1 h-3 w-3" />
-                      Add Email
-                    </Button>
-                  )}
-                </td>
                 <td className="px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
                   {formatDistanceToNow(new Date(job.created_at!), { addSuffix: true })}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-1">
-                    {!job.hr_email && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-7"
-                        onClick={() => onFindEmail?.(job.id)}
-                        disabled={findingEmail === job.id}
-                      >
-                        {findingEmail === job.id ? (
-                          <>
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                            Finding...
-                          </>
-                        ) : (
-                          'Find Email'
-                        )}
-                      </Button>
-                    )}
-                    {job.hr_email && (
+                    {job.contact_count > 0 && (
                       <Button
                         size="sm"
                         className="h-7 w-7 p-0"

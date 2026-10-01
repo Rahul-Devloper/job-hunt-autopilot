@@ -5,7 +5,7 @@ import type { EmailFinderProviderInfo } from '@/types/email-finders'
  * Add new providers here — no database changes needed.
  *
  * Snov.io is intentionally omitted — SnovAdapter (lib/email-finders/adapters/
- * snov-adapter.ts) only implements auth, not findByName()/findByLinkedIn(),
+ * snov-adapter.ts) only implements auth, not findByName(),
  * so it can never return a contact. Re-add here once those are built.
  */
 export const EMAIL_FINDER_PROVIDERS: EmailFinderProviderInfo[] = [

@@ -11,9 +11,6 @@ export interface Contact {
   linkedin_url?: string
 }
 
-type AdapterWithLinkedIn = {
-  findByLinkedIn: (url: string, token: string, title?: string | null) => Promise<Contact | null>
-}
 type AdapterWithName = {
   findByName: (first: string, last: string, domain: string, token: string, title?: string | null, linkedinUrl?: string | null) => Promise<Contact | null>
 }
@@ -65,84 +62,6 @@ async function tryFindByName(
 
 export class ContactDiscoveryService {
   /**
-   * Look up the job poster's email.
-   * Strategy 1: LinkedIn URL lookup (most accurate — tries all providers with findByLinkedIn).
-   * Strategy 2: Name + domain lookup (fallback — tries all providers with findByName).
-   */
-  static async findPosterContact(
-    posterName: string | null,
-    posterTitle: string | null,
-    posterLinkedInUrl: string | null,
-    companyDomain: string,
-    userId: string,
-  ): Promise<Contact | null> {
-    try {
-      const providers = await EmailFinderRepository.getActiveProviders(userId)
-
-      // Strategy 1: LinkedIn URL lookup
-      if (posterLinkedInUrl) {
-        for (const { provider } of providers) {
-          try {
-            const adapter = getAdapter(provider)
-            if (typeof (adapter as unknown as AdapterWithLinkedIn).findByLinkedIn !== 'function') continue
-
-            const token = await EmailFinderRepository.getValidToken(userId, provider)
-            if (!token) continue
-
-            console.log(`[ContactDiscovery] Trying LinkedIn URL lookup via ${provider}`)
-            const contact = await (adapter as unknown as AdapterWithLinkedIn).findByLinkedIn(posterLinkedInUrl, token, posterTitle)
-
-            if (contact) {
-              console.log(`[ContactDiscovery] LinkedIn lookup success via ${provider}:`, contact.email)
-              return contact
-            }
-          } catch (err) {
-            console.error(`[ContactDiscovery] findByLinkedIn error for ${provider}:`, err)
-          }
-        }
-      }
-
-      // Strategy 2: Name + domain lookup
-      // Skip if domain looks auto-generated from LinkedIn slug — likely wrong TLD/domain
-      const domainLooksGenerated =
-        companyDomain.includes('-ltd') ||
-        companyDomain.includes('-inc') ||
-        companyDomain.includes('-corp') ||
-        companyDomain.includes('-online') ||
-        companyDomain.includes('-uk')
-
-      if (domainLooksGenerated) {
-        console.log('[ContactDiscovery] Domain looks auto-generated, skipping name lookup:', companyDomain)
-        return null
-      }
-
-      const name = posterName ? splitName(posterName) : null
-      if (name) {
-        const contact = await tryFindByName(
-          providers,
-          userId,
-          name.firstName,
-          name.lastName,
-          companyDomain,
-          posterTitle,
-          posterLinkedInUrl,
-          '[ContactDiscovery]',
-        )
-        if (contact) {
-          console.log('[ContactDiscovery] Name lookup success:', contact.email)
-          return contact
-        }
-      }
-
-      console.log('[ContactDiscovery] All poster lookup strategies exhausted — no contact found')
-      return null
-    } catch (err) {
-      console.error('[ContactDiscovery] findPosterContact error:', err)
-      return null
-    }
-  }
-
-  /**
    * Batch lookup for LinkedIn people page profiles.
    * All profiles run in parallel via findByName using the provided verified domain.
    */
@@ -177,19 +96,5 @@ export class ContactDiscoveryService {
 
     console.log('[BatchLookup] Total contacts found:', results.length)
     return results
-  }
-
-  static extractDomain(companyNameOrUrl: string): string | null {
-    try {
-      if (companyNameOrUrl.includes('http') || companyNameOrUrl.includes('.com')) {
-        const url = new URL(
-          companyNameOrUrl.startsWith('http') ? companyNameOrUrl : `https://${companyNameOrUrl}`
-        )
-        return url.hostname.replace('www.', '')
-      }
-      return `${companyNameOrUrl.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
-    } catch {
-      return null
-    }
   }
 }

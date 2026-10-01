@@ -3,6 +3,8 @@ import { ApiResponseBuilder } from '@/lib/api/api-response'
 import { ValidationService } from '@/lib/validation/validation-service'
 import { jobContactRepository } from '@/lib/repositories'
 import { jobContactSchemas } from '@/lib/validation/schemas'
+import { createClient } from '@/lib/supabase/server'
+import { syncJobStatusWithContacts } from '@/lib/utils/update-job-status'
 
 export async function GET(
   _request: Request,
@@ -46,6 +48,8 @@ export async function POST(
       user_id: auth.userId,
       is_primary: isPrimary,
     })
+
+    await syncJobStatusWithContacts(await createClient(), id, auth.userId)
 
     return ApiResponseBuilder.created(contact, 'Contact added')
   } catch (error) {

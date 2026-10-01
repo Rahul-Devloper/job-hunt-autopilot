@@ -216,7 +216,7 @@ export class EmailFinderRepository {
    * Return active providers sorted by priority: GetProspect → Hunter
    *
    * Snov is intentionally excluded — SnovAdapter only implements
-   * authenticate()/refreshAuth(), not findByName()/findByLinkedIn(), so it
+   * authenticate()/refreshAuth(), not findByName(), so it
    * can never actually return a contact. Re-enable once those are built.
    */
   static async getActiveProviders(

@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MoreVertical, ExternalLink, Mail, Trash2, Loader2, Edit2, X, Users } from 'lucide-react'
+import { MoreVertical, ExternalLink, Trash2, Loader2, Users } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,17 +23,13 @@ import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { ContactList } from '@/components/dashboard/contact-list'
 import { ExtractionConfidenceBadge } from '@/components/dashboard/extraction-confidence-badge'
-import type { Job, JobStatus } from '@/types'
+import type { BoardJob, JobStatus } from '@/types'
 
 interface JobCardProps {
-  job: Job
+  job: BoardJob
   onDelete?: (id: string) => void
-  onFindEmail?: (id: string) => void
   onSendEmail?: (id: string) => void
-  onManualEmail?: (id: string, existingEmail?: string) => void
-  onRemoveEmail?: (id: string) => void
   onStatusChange?: (id: string, status: JobStatus) => void
-  findingEmail?: string | null
   onRefresh?: () => void
 }
 
@@ -65,12 +60,8 @@ export const statusLabels: Record<string, string> = {
 export function JobCard({
   job,
   onDelete,
-  onFindEmail,
   onSendEmail,
-  onManualEmail,
-  onRemoveEmail,
   onStatusChange,
-  findingEmail,
   onRefresh,
 }: JobCardProps) {
   const [contactsOpen, setContactsOpen] = useState(false)
@@ -160,56 +151,11 @@ export function JobCard({
                   ))}
                 </SelectContent>
               </Select>
-              {job.hr_email && (
-                <Badge variant="outline" className="gap-1 text-xs">
-                  <Mail className="h-3 w-3" />
-                  <span className="truncate max-w-[120px]">{job.hr_email}</span>
-                </Badge>
-              )}
-              {job.email_type === 'personal' && (
-                <Badge className="gap-1 bg-green-100 text-green-800 border-green-200 hover:bg-green-100 text-xs dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30 dark:hover:bg-green-500/20">
-                  ★ Personal
-                </Badge>
-              )}
-              {job.hr_email && job.email_type === 'generic' && (
-                <Badge variant="outline" className="gap-1 text-muted-foreground text-xs">
-                  Generic
-                </Badge>
-              )}
               <ExtractionConfidenceBadge confidence={job.extraction_confidence} />
             </div>
 
             <div className="mt-3 flex gap-2 flex-wrap">
-              {!job.hr_email && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => onFindEmail?.(job.id)}
-                    disabled={findingEmail === job.id}
-                  >
-                    {findingEmail === job.id ? (
-                      <>
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        Finding...
-                      </>
-                    ) : (
-                      'Find Email'
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => onManualEmail?.(job.id)}
-                  >
-                    <Mail className="mr-1 h-3 w-3" />
-                    Add Email
-                  </Button>
-                </>
-              )}
-              {job.hr_email && (
+              {job.contact_count > 0 && (
                 <Button
                   size="sm"
                   className="text-xs h-7"
@@ -274,25 +220,6 @@ export function JobCard({
                 <Users className="mr-2 h-4 w-4" />
                 Manage Contacts
               </DropdownMenuItem>
-              {job.hr_email && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => onManualEmail?.(job.id, job.hr_email ?? undefined)}
-                  >
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    Edit Email
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={() => onRemoveEmail?.(job.id)}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Remove Email
-                  </DropdownMenuItem>
-                </>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-red-600 dark:text-red-400 cursor-pointer"
@@ -311,6 +238,7 @@ export function JobCard({
         companyName={job.company_name}
         open={contactsOpen}
         onClose={() => setContactsOpen(false)}
+        onContactsChanged={onRefresh}
       />
     </>
   )
