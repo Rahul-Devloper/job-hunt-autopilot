@@ -160,6 +160,7 @@ export default function JobsPage() {
               jobs={filteredJobs}
               onDelete={handleDelete}
               onSendEmail={handleSendEmail}
+              onRefresh={fetchJobs}
             />
           </TabsContent>
         </Tabs>

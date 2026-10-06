@@ -1,12 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Mail, Trash2 } from 'lucide-react'
+import { ExternalLink, Mail, Trash2, Users } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { statusColors, statusLabels } from './job-card'
+import { ContactList } from '@/components/dashboard/contact-list'
 import { ExtractionConfidenceBadge } from '@/components/dashboard/extraction-confidence-badge'
 import type { BoardJob } from '@/types'
 
@@ -14,9 +16,15 @@ interface ListViewProps {
   jobs: BoardJob[]
   onDelete?: (id: string) => void
   onSendEmail?: (id: string) => void
+  onRefresh?: () => void
 }
 
-export function ListView({ jobs, onDelete, onSendEmail }: ListViewProps) {
+export function ListView({ jobs, onDelete, onSendEmail, onRefresh }: ListViewProps) {
+  // One popup for the whole table, keyed to the row that opened it (not one
+  // mounted dialog per row). Holds id + name only, so a jobs refetch after a
+  // contact change doesn't close it.
+  const [contactsJob, setContactsJob] = useState<{ id: string; companyName: string } | null>(null)
+
   return (
     <div className="h-full p-8">
       <div className="h-full overflow-auto rounded-lg border bg-card">
@@ -71,6 +79,17 @@ export function ListView({ jobs, onDelete, onSendEmail }: ListViewProps) {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 px-2 text-xs"
+                      onClick={() => setContactsJob({ id: job.id, companyName: job.company_name })}
+                      title="Contacts"
+                      aria-label={`Contacts for ${job.company_name} (${job.contact_count})`}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      {job.contact_count}
+                    </Button>
                     {job.contact_count > 0 && (
                       <Button
                         size="sm"
@@ -112,6 +131,16 @@ export function ListView({ jobs, onDelete, onSendEmail }: ListViewProps) {
           </div>
         )}
       </div>
+
+      {contactsJob && (
+        <ContactList
+          jobId={contactsJob.id}
+          companyName={contactsJob.companyName}
+          open
+          onClose={() => setContactsJob(null)}
+          onContactsChanged={onRefresh}
+        />
+      )}
     </div>
   )
 }
