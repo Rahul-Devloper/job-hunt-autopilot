@@ -5,11 +5,10 @@ Open-source job hunting automation tool that reduces application time from 20 mi
 ## Features
 
 - One-click job capture from LinkedIn/Indeed (Chrome extension)
-- Free HR email finding (community database + pattern guessing)
+- HR contact finding from LinkedIn people search (email lookup via your own Hunter or GetProspect key)
 - Automated cold emails via Gmail with tracking
 - Auto-scheduled follow-up reminders
 - Analytics dashboard (open rates, reply rates, conversion funnel)
-- Community-powered email database
 
 ## Tech Stack
 

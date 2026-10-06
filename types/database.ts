@@ -236,77 +236,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      community_emails: {
-        Row: {
-          company_domain: string;
-          company_name: string | null;
-          contributed_by: string | null;
-          created_at: string | null;
-          email: string;
-          email_type: Database["public"]["Enums"]["email_type"];
-          failed_count: number | null;
-          id: string;
-          updated_at: string | null;
-          verified_count: number | null;
-        };
-        Insert: {
-          company_domain: string;
-          company_name?: string | null;
-          contributed_by?: string | null;
-          created_at?: string | null;
-          email: string;
-          email_type?: Database["public"]["Enums"]["email_type"];
-          failed_count?: number | null;
-          id?: string;
-          updated_at?: string | null;
-          verified_count?: number | null;
-        };
-        Update: {
-          company_domain?: string;
-          company_name?: string | null;
-          contributed_by?: string | null;
-          created_at?: string | null;
-          email?: string;
-          email_type?: Database["public"]["Enums"]["email_type"];
-          failed_count?: number | null;
-          id?: string;
-          updated_at?: string | null;
-          verified_count?: number | null;
-        };
-        Relationships: [];
-      };
-      email_verifications: {
-        Row: {
-          community_email_id: string;
-          created_at: string | null;
-          id: string;
-          user_id: string;
-          worked: boolean;
-        };
-        Insert: {
-          community_email_id: string;
-          created_at?: string | null;
-          id?: string;
-          user_id: string;
-          worked: boolean;
-        };
-        Update: {
-          community_email_id?: string;
-          created_at?: string | null;
-          id?: string;
-          user_id?: string;
-          worked?: boolean;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "email_verifications_community_email_id_fkey";
-            columns: ["community_email_id"];
-            isOneToOne: false;
-            referencedRelation: "community_emails";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       emails_sent: {
         Row: {
           body: string;
@@ -448,11 +377,7 @@ export type Database = {
           company_linkedin_url: string | null;
           company_name: string;
           created_at: string | null;
-          email_source: Database["public"]["Enums"]["email_source"] | null;
-          email_type: Database["public"]["Enums"]["email_type"] | null;
           extraction_confidence: Database["public"]["Enums"]["extraction_confidence"];
-          hr_email: string | null;
-          hr_name: string | null;
           id: string;
           job_description: string | null;
           job_embedding: string | null;
@@ -473,11 +398,7 @@ export type Database = {
           company_linkedin_url?: string | null;
           company_name: string;
           created_at?: string | null;
-          email_source?: Database["public"]["Enums"]["email_source"] | null;
-          email_type?: Database["public"]["Enums"]["email_type"] | null;
           extraction_confidence?: Database["public"]["Enums"]["extraction_confidence"];
-          hr_email?: string | null;
-          hr_name?: string | null;
           id?: string;
           job_description?: string | null;
           job_embedding?: string | null;
@@ -498,11 +419,7 @@ export type Database = {
           company_linkedin_url?: string | null;
           company_name?: string;
           created_at?: string | null;
-          email_source?: Database["public"]["Enums"]["email_source"] | null;
-          email_type?: Database["public"]["Enums"]["email_type"] | null;
           extraction_confidence?: Database["public"]["Enums"]["extraction_confidence"];
-          hr_email?: string | null;
-          hr_name?: string | null;
           id?: string;
           job_description?: string | null;
           job_embedding?: string | null;
@@ -736,8 +653,6 @@ export type Database = {
       };
     };
     Enums: {
-      email_source: "community" | "pattern" | "hunter" | "apollo" | "manual";
-      email_type: "generic" | "personal";
       extraction_confidence: "ok" | "degraded" | "failed";
       job_status:
         | "captured"
@@ -876,8 +791,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      email_source: ["community", "pattern", "hunter", "apollo", "manual"],
-      email_type: ["generic", "personal"],
       extraction_confidence: ["ok", "degraded", "failed"],
       job_status: [
         "captured",

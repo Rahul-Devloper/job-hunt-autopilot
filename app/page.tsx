@@ -41,9 +41,9 @@ export default async function LandingPage() {
         <div className="mt-20 grid gap-8 md:grid-cols-3">
           <div className="rounded-lg border bg-card p-6 shadow-sm">
             <Zap className="mx-auto mb-4 h-12 w-12 text-blue-600 dark:text-blue-400" />
-            <h3 className="mb-2 text-xl font-bold">Find Emails Free</h3>
+            <h3 className="mb-2 text-xl font-bold">Find HR Contacts</h3>
             <p className="text-muted-foreground">
-              No more paying $49/month for email finders. Our community database grows with every user.
+              Pull recruiter contacts straight from LinkedIn and look up their emails with your own Hunter or GetProspect key.
             </p>
           </div>
 

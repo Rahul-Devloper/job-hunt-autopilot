@@ -12,15 +12,8 @@ export type JobUpdate = Database['public']['Tables']['jobs']['Update']
 // (the rows the Contacts popup shows). Send Email is gated on this count.
 export type BoardJob = Job & { contact_count: number }
 
-export type CommunityEmail = Database['public']['Tables']['community_emails']['Row']
-export type CommunityEmailInsert = Database['public']['Tables']['community_emails']['Insert']
-export type CommunityEmailUpdate = Database['public']['Tables']['community_emails']['Update']
-
 export type EmailSent = Database['public']['Tables']['emails_sent']['Row']
 export type EmailSentInsert = Database['public']['Tables']['emails_sent']['Insert']
-
-export type EmailVerification = Database['public']['Tables']['email_verifications']['Row']
-export type EmailVerificationInsert = Database['public']['Tables']['email_verifications']['Insert']
 
 export type FollowupReminder = Database['public']['Tables']['followup_reminders']['Row']
 export type FollowupReminderInsert = Database['public']['Tables']['followup_reminders']['Insert']
@@ -38,6 +31,4 @@ export type UserStatsUpdate = Database['public']['Tables']['user_stats']['Update
 
 // Export enums
 export type JobStatus = Database['public']['Enums']['job_status']
-export type EmailSource = Database['public']['Enums']['email_source']
-export type EmailType = Database['public']['Enums']['email_type']
 export type ExtractionConfidence = Database['public']['Enums']['extraction_confidence']
